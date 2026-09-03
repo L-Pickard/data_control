@@ -1,0 +1,6 @@
+| Type      | Style              | Example        |
+| --------- | ------------------ | -------------- |
+| variables | `lower_snake_case` | `order_total`  |
+| functions | `lower_snake_case` | `get_orders()` |
+| classes   | `PascalCase`       | `OrderService` |
+| constants | `UPPER_CASE`       | `MAX_RETRIES`  |

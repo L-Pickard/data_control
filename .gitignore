@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+
+venv/
+__pycache__/
+*.py[cod]
+
+.vs/
+.vscode/
+*.user
+*.suo
+
+*.xlsx
+*.xlsm

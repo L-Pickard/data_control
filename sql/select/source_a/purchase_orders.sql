@@ -1,0 +1,127 @@
+WITH purchase_headers AS (
+	SELECT 'Example Ltd' AS [entity]
+		,ph.[Document Type], ph.[No_], ph.[Currency Code], ph.[Currency Factor]
+		,ph.[Purchaser Code], ph.[Status], ph.[Order Date], ph.[Document Date]
+		,ph.[Posting Date], ph.[Due Date], ph.[Your Reference]
+		,ph.[Vendor Order No_], ph.[Vendor Invoice No_], ph.[Shipment Method Code]
+		,ph.[Afloat], ph.[Container No_], ph.[Waybill No_], ph.[Date Afloat]
+		,ph.[Requested XF Date], ph.[Promised XF Date], ph.[Actual XF Date]
+		,ph.[Deposit Payment Date], ph.[Balance Payment Date], ph.[Example Ref_]
+		,ph.[Intercompany Doc No_], ph.[3PL Sent], ph.[3PL Date Time]
+		,ph.[Last Modified Date Time]
+	FROM [Example$Purchase Header] AS ph
+	WHERE ph.[Document Type] = 1
+
+	UNION ALL
+
+	SELECT 'Example BV' AS [entity]
+		,ph.[Document Type], ph.[No_], ph.[Currency Code], ph.[Currency Factor]
+		,ph.[Purchaser Code], ph.[Status], ph.[Order Date], ph.[Document Date]
+		,ph.[Posting Date], ph.[Due Date], ph.[Your Reference]
+		,ph.[Vendor Order No_], ph.[Vendor Invoice No_], ph.[Shipment Method Code]
+		,ph.[Afloat], ph.[Container No_], ph.[Waybill No_], ph.[Date Afloat]
+		,ph.[Requested XF Date], ph.[Promised XF Date], ph.[Actual XF Date]
+		,ph.[Deposit Payment Date], ph.[Balance Payment Date], ph.[Example Ref_]
+		,ph.[Intercompany Doc No_], ph.[3PL Sent], ph.[3PL Date Time]
+		,ph.[Last Modified Date Time]
+	FROM [Example BV$Purchase Header] AS ph
+	WHERE ph.[Document Type] = 1
+),
+purchase_lines AS (
+	SELECT 'Example Ltd' AS [entity]
+		,pl.[Document Type], pl.[Document No_], pl.[Line No_], pl.[Type], pl.[No_]
+		,pl.[Buy-from Vendor No_], pl.[Pay-to Vendor No_], pl.[Location Code]
+		,pl.[Unit of Measure Code], pl.[Expected Receipt Date]
+		,pl.[Requested Receipt Date], pl.[Promised Receipt Date]
+		,pl.[Planned Receipt Date], pl.[Shortcut Dimension 1 Code]
+		,pl.[Shortcut Dimension 2 Code], pl.[Drop Shipment], pl.[Quantity]
+		,pl.[Quantity Received], pl.[Quantity Invoiced], pl.[Qty_ to Receive]
+		,pl.[Outstanding Quantity], pl.[Direct Unit Cost], pl.[Unit Cost (LCY)]
+		,pl.[Line Discount %] AS [Line Discount Percent], pl.[Line Discount Amount]
+		,pl.[Line Amount], pl.[Amount Including VAT], pl.[Outstanding Amount]
+		,pl.[Outstanding Amount (LCY)]
+	FROM [Example$Purchase Line] AS pl
+	WHERE pl.[Document Type] = 1
+
+	UNION ALL
+
+	SELECT 'Example BV' AS [entity]
+		,pl.[Document Type], pl.[Document No_], pl.[Line No_], pl.[Type], pl.[No_]
+		,pl.[Buy-from Vendor No_], pl.[Pay-to Vendor No_], pl.[Location Code]
+		,pl.[Unit of Measure Code], pl.[Expected Receipt Date]
+		,pl.[Requested Receipt Date], pl.[Promised Receipt Date]
+		,pl.[Planned Receipt Date], pl.[Shortcut Dimension 1 Code]
+		,pl.[Shortcut Dimension 2 Code], pl.[Drop Shipment], pl.[Quantity]
+		,pl.[Quantity Received], pl.[Quantity Invoiced], pl.[Qty_ to Receive]
+		,pl.[Outstanding Quantity], pl.[Direct Unit Cost], pl.[Unit Cost (LCY)]
+		,pl.[Line Discount %], pl.[Line Discount Amount], pl.[Line Amount]
+		,pl.[Amount Including VAT], pl.[Outstanding Amount]
+		,pl.[Outstanding Amount (LCY)]
+	FROM [Example BV$Purchase Line] AS pl
+	WHERE pl.[Document Type] = 1
+)
+
+SELECT pl.[entity]
+	,pl.[Document Type] AS [document_type]
+	,'Order' AS [document_type_name]
+	,pl.[Document No_] AS [document_no]
+	,pl.[Line No_] AS [line_no]
+	,CASE WHEN pl.[Type] = 2 THEN NULLIF(pl.[No_], '') END AS [item_id]
+	,NULLIF(pl.[Buy-from Vendor No_], '') AS [vendor_id]
+	,NULLIF(pl.[Pay-to Vendor No_], '') AS [pay_to_vendor_id]
+	,NULLIF(pl.[Location Code], '') AS [location_code]
+	,NULLIF(pl.[Unit of Measure Code], '') AS [unit_of_measure_code]
+	,NULLIF(ph.[Purchaser Code], '') AS [purchaser_code]
+	,COALESCE(NULLIF(ph.[Currency Code], ''), CASE pl.[entity] WHEN 'Example BV' THEN 'EUR' ELSE 'GBP' END) AS [currency_code]
+	,ph.[Currency Factor] AS [currency_factor]
+	,ph.[Status] AS [document_status]
+	,CASE ph.[Status] WHEN 0 THEN 'Open' WHEN 1 THEN 'Released' WHEN 2 THEN 'Pending Approval' WHEN 3 THEN 'Pending Prepayment' ELSE 'Unknown' END AS [document_status_name]
+	,NULLIF(CAST(ph.[Order Date] AS DATE), '17530101') AS [order_date]
+	,NULLIF(CAST(ph.[Document Date] AS DATE), '17530101') AS [document_date]
+	,NULLIF(CAST(ph.[Posting Date] AS DATE), '17530101') AS [posting_date]
+	,NULLIF(CAST(pl.[Expected Receipt Date] AS DATE), '17530101') AS [expected_receipt_date]
+	,NULLIF(CAST(pl.[Requested Receipt Date] AS DATE), '17530101') AS [requested_receipt_date]
+	,NULLIF(CAST(pl.[Promised Receipt Date] AS DATE), '17530101') AS [promised_receipt_date]
+	,NULLIF(CAST(pl.[Planned Receipt Date] AS DATE), '17530101') AS [planned_receipt_date]
+	,NULLIF(CAST(ph.[Due Date] AS DATE), '17530101') AS [due_date]
+	,NULLIF(ph.[Your Reference], '') AS [your_reference]
+	,NULLIF(ph.[Vendor Order No_], '') AS [vendor_order_no]
+	,NULLIF(ph.[Vendor Invoice No_], '') AS [vendor_invoice_no]
+	,NULLIF(ph.[Shipment Method Code], '') AS [shipment_method_code]
+	,NULLIF(pl.[Shortcut Dimension 1 Code], '') AS [country_dimension_code]
+	,NULLIF(pl.[Shortcut Dimension 2 Code], '') AS [brand_dimension_code]
+	,CAST(pl.[Drop Shipment] AS BIT) AS [drop_shipment]
+	,pl.[Quantity] AS [quantity]
+	,pl.[Quantity Received] AS [quantity_received]
+	,pl.[Quantity Invoiced] AS [quantity_invoiced]
+	,pl.[Qty_ to Receive] AS [quantity_to_receive]
+	,pl.[Outstanding Quantity] AS [outstanding_quantity]
+	,pl.[Direct Unit Cost] AS [direct_unit_cost]
+	,pl.[Unit Cost (LCY)] AS [unit_cost_lcy]
+	,pl.[Line Discount Percent] AS [line_discount_percent]
+	,pl.[Line Discount Amount] AS [line_discount_amount]
+	,pl.[Line Amount] AS [line_amount]
+	,pl.[Amount Including VAT] AS [amount_including_vat]
+	,pl.[Outstanding Amount] AS [outstanding_amount]
+	,pl.[Outstanding Amount (LCY)] AS [outstanding_amount_lcy]
+	,CAST(ph.[Afloat] AS BIT) AS [afloat]
+	,NULLIF(ph.[Container No_], '') AS [container_no]
+	,NULLIF(ph.[Waybill No_], '') AS [waybill_no]
+	,NULLIF(CAST(ph.[Date Afloat] AS DATE), '17530101') AS [date_afloat]
+	,NULLIF(CAST(ph.[Requested XF Date] AS DATE), '17530101') AS [requested_xf_date]
+	,NULLIF(CAST(ph.[Promised XF Date] AS DATE), '17530101') AS [promised_xf_date]
+	,NULLIF(CAST(ph.[Actual XF Date] AS DATE), '17530101') AS [actual_xf_date]
+	,NULLIF(CAST(ph.[Deposit Payment Date] AS DATE), '17530101') AS [deposit_payment_date]
+	,NULLIF(CAST(ph.[Balance Payment Date] AS DATE), '17530101') AS [balance_payment_date]
+	,NULLIF(ph.[Example Ref_], '') AS [external_reference]
+	,NULLIF(ph.[Intercompany Doc No_], '') AS [intercompany_document_no]
+	,CAST(ph.[3PL Sent] AS BIT) AS [sent_to_3pl]
+	,NULLIF(ph.[3PL Date Time], '17530101') AS [sent_to_3pl_at]
+	,NULLIF(ph.[Last Modified Date Time], '17530101') AS [last_modified]
+
+FROM purchase_lines AS pl
+
+INNER JOIN purchase_headers AS ph
+	ON ph.[entity] = pl.[entity]
+	AND ph.[Document Type] = pl.[Document Type]
+	AND ph.[No_] = pl.[Document No_];

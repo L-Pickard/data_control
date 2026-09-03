@@ -1,0 +1,22 @@
+USE [data_control]
+
+GO
+
+SET ANSI_NULLS ON
+
+GO
+
+SET QUOTED_IDENTIFIER ON
+
+GO
+
+CREATE OR ALTER FUNCTION [dbo].[fnc_date_key] (
+	@date DATE
+	)
+RETURNS INT
+WITH SCHEMABINDING
+AS
+BEGIN
+	RETURN YEAR(@date) * 10000 + MONTH(@date) * 100 + DAY(@date)
+
+END
