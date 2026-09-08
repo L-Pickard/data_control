@@ -16,6 +16,7 @@ def main() -> None:
         update_customers_table,
         update_exchange_rates_table,
         update_item_images_table,
+        update_item_packaging_table,
         update_inventory_table,
         update_items_table,
         update_monthly_average_exchange_rates_table,
@@ -294,6 +295,21 @@ def main() -> None:
                 action,
                 f"item image tables have successfully been updated. "
                 f"{rows_affected} locations were inserted.",
+                rows_affected,
+            )
+
+        rows_affected = update_item_packaging_table(engine_sql18, logger)
+        action = "update [data_control].[dbo].[item_packaging] table"
+
+        if rows_affected is None:
+            print("An error occurred updating item_packaging table")
+            logger.failure("item_packaging", action, "item_packaging table update failed")
+        else:
+            print(f"item_packaging table successfully updated, rows affected: {rows_affected}")
+            logger.success(
+                "item_packaging",
+                action,
+                f"item_packaging successfully updated; {rows_affected} rows inserted",
                 rows_affected,
             )
 

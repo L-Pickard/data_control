@@ -2,8 +2,8 @@ import sys
 from datetime import datetime, timedelta
 from ftplib import FTP
 from pathlib import Path
-from shutil import move
 from typing import Literal
+from uuid import uuid4
 
 from pandas import DataFrame, read_csv, to_datetime, to_numeric
 from pandas.errors import EmptyDataError, ParserError
@@ -26,6 +26,7 @@ from shinerutils import (
     write_df_to_sql_db,
 )
 from shinerutils.logging import UK_TIMEZONE, DatabaseLogger
+from shinerutils.ftp import polling_lock
 
 PREORDER_COLUMNS = {
     "preorder_code": NVARCHAR(50),
@@ -139,12 +140,14 @@ def move_local_file(
     if not local_path.is_file():
         return None
 
-    timestamp = datetime.now(tz=UK_TIMEZONE).strftime("%Y%m%d%S")
-    destination_name = f"{local_path.stem}_{timestamp}{local_path.suffix}"
+    timestamp = datetime.now(tz=UK_TIMEZONE).strftime("%Y%m%d_%H%M%S_%f")
+    destination_name = f"{local_path.stem}_{timestamp}_{uuid4().hex}{local_path.suffix}"
     destination_path = destination_directory / destination_name
 
     try:
-        move(local_path, destination_path)
+        # Both directories are on the same share. Do not fall back to copy/delete:
+        # a locked source could otherwise leave a misleading archive copy.
+        local_path.rename(destination_path)
     except OSError as e:
         return f"move {local_path.name} to {destination}: {e}"
 
@@ -242,7 +245,8 @@ def process_file(
     action = f"read {file_name} into a pandas dataframe"
 
     try:
-        df = read_csv(local_path, header=0)
+        with local_path.open("rb") as csv_file:
+            df = read_csv(csv_file, header=0)
 
     except (
         EmptyDataError,
@@ -326,6 +330,15 @@ def process_file(
 
 
 def main() -> int:
+    try:
+        with polling_lock(DOWNLOAD_DIRECTORY / ".ftp_polling.lock"):
+            return run_polling()
+    except (OSError, RuntimeError) as exc:
+        print(f"FTP polling failed: {exc}")
+        return 1
+
+
+def run_polling() -> int:
 
     exit_code = 0
 

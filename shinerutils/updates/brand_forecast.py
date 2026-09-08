@@ -7,7 +7,6 @@ from shinerutils.logging import DatabaseLogger
 from shinerutils.sql import write_df_to_sql_db
 from shinerutils.utils import concurrent_df_load
 
-
 TABLE = "brand_forecast"
 STAGING_TABLE = "brand_forecast_staging"
 KEY_COLUMNS = ["entity", "brand_code", "sales_type", "date"]

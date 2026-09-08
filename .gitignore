@@ -87,10 +87,10 @@ Thumbs.db
 *.tmp
 *.swp
 *~
-
+*.md
 # Local config files
 config.json
-
+AGENTS.md
 # Data files (optional - remove if you want them tracked)
 data/
 
@@ -99,3 +99,8 @@ data/
 # Local assistant / editor caches
 .agents/
 .alpackages/
+*.txt
+
+*.xlsx
+
+documents/date_dimension.md

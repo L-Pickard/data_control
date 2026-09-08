@@ -1,11 +1,13 @@
 import os
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
-from sqlalchemy import Engine
 from pandas import DataFrame
-from shinerutils.sql import fetch_sql_dataframe
+from sqlalchemy import Engine
+
 from shinerutils.logging import DatabaseLogger
+from shinerutils.sql import fetch_sql_dataframe
 
 
 def load_environment_file(

@@ -49,6 +49,7 @@ UPDATES: dict[str, UpdateDefinition] = {
         "update_inventory_table", ("sql02", "sql04", "warehouse")
     ),
     "item_images": UpdateDefinition("update_item_images_table", ("warehouse",)),
+    "item_packaging": UpdateDefinition("update_item_packaging_table", ("warehouse",)),
     "monthly_avg_xr": UpdateDefinition(
         "update_monthly_average_exchange_rates_table", ("finance", "warehouse")
     ),

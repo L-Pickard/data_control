@@ -54,6 +54,7 @@ from .updates.customers import update_customers_table
 from .updates.dates import update_dates_table
 from .updates.exchange_rates import update_exchange_rates_table
 from .updates.items import update_items_table
+from .updates.item_packaging import update_item_packaging_table
 from .updates.inventory import update_inventory_table
 from .updates.item_images import (
     sync_item_images_to_sharepoint,
@@ -134,6 +135,7 @@ __all__ = [
     "update_items_table",
     "update_inventory_table",
     "update_item_images_table",
+    "update_item_packaging_table",
     "update_monthly_average_exchange_rates_table",
     "update_purchase_orders_table",
     "update_preorders_table",
