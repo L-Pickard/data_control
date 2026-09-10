@@ -59,11 +59,7 @@ from .updates.item_images import (
     sync_item_images_to_sharepoint,
     update_item_images_table,
 )
-from .updates.monthly_average_exchange_rates import (
-    update_monthly_average_exchange_rates_table,
-)
 from .updates.purchase_orders import update_purchase_orders_table
-from .updates.preorders import update_preorders_table
 from .updates.record_link import update_record_link_table
 from .updates.sales import update_sales_table
 from .updates.sales_orders import update_sales_orders_table
@@ -134,9 +130,7 @@ __all__ = [
     "update_inventory_table",
     "update_item_images_table",
     "update_item_packaging_table",
-    "update_monthly_average_exchange_rates_table",
     "update_purchase_orders_table",
-    "update_preorders_table",
     "update_record_link_table",
     "update_sales_people_table",
     "update_sales_table",

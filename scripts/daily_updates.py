@@ -25,6 +25,7 @@ def main() -> None:
         update_vendors_table,
     )
     from shinerutils.logging import DatabaseLogger
+    from shinerutils.maintenance import maintain_loaded_tables
 
     # initialize new instance of logger class
 
@@ -36,6 +37,8 @@ def main() -> None:
     engine_sql04 = get_sqlalchemy_engine("shinersql04", "BC_LIVE_USA")
     engine_sql05 = get_sqlalchemy_engine("shinersql05", "BC_UAT_UK")
     engine_sql18 = get_sqlalchemy_engine("shinersql18", "data_control")
+
+    successful_tables: list[str] = []
 
     try:
         # execute function to update salesperson table and log wether it resulted in success or failure
@@ -57,6 +60,9 @@ def main() -> None:
             )
 
         else:
+
+            successful_tables.extend(["sales_people"])
+
             print(
                 "sales_people table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -88,6 +94,8 @@ def main() -> None:
             )
 
         else:
+            successful_tables.extend(["countries"])
+
             print(
                 "countries table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -119,6 +127,9 @@ def main() -> None:
             )
 
         else:
+
+            successful_tables.extend(["customers"])
+
             print(
                 "customers table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -149,6 +160,9 @@ def main() -> None:
                 message="vendors table update has failed",
             )
         else:
+
+            successful_tables.extend(["vendors"])
+
             print(
                 "vendors table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -178,6 +192,9 @@ def main() -> None:
             )
 
         else:
+
+            successful_tables.extend(["brands"])
+
             print(
                 "brands table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -209,6 +226,9 @@ def main() -> None:
             )
 
         else:
+
+            successful_tables.extend(["items"])
+
             print(
                 "items table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -239,6 +259,9 @@ def main() -> None:
                 message="inventory table update has failed",
             )
         else:
+
+            successful_tables.extend(["inventory"])
+
             print(
                 "inventory table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -270,6 +293,9 @@ def main() -> None:
                 message="record_link table update has failed",
             )
         else:
+
+            successful_tables.extend(["record_link"])
+
             print(
                 "record_link table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -298,6 +324,9 @@ def main() -> None:
                 message="item image table update has failed",
             )
         else:
+
+            successful_tables.extend(["item_images", "item_image_locations"])
+
             print(
                 "item image tables have been successfully updated, "
                 "locations affected: ",
@@ -325,6 +354,9 @@ def main() -> None:
                 message="item_packaging table update failed",
             )
         else:
+
+            successful_tables.extend(["item_packaging"])
+
             print(
                 f"item_packaging table successfully updated, rows affected: {rows_affected}"
             )
@@ -354,6 +386,9 @@ def main() -> None:
             )
 
         else:
+
+            successful_tables.extend(["exchange_rates"])
+
             print(
                 "exchange_rates table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -384,6 +419,9 @@ def main() -> None:
                 message="purchase_orders table update has failed",
             )
         else:
+
+            successful_tables.extend(["purchase_orders"])
+
             print(
                 "purchase_orders table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -414,6 +452,9 @@ def main() -> None:
                 message="sales_orders table update has failed",
             )
         else:
+
+            successful_tables.extend(["sales_orders"])
+
             print(
                 "sales_orders table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -444,6 +485,9 @@ def main() -> None:
                 message="sales table update has failed",
             )
         else:
+
+            successful_tables.extend(["sales"])
+            
             print(
                 "sales table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -455,6 +499,8 @@ def main() -> None:
                 f"{rows_affected} rows were affected.",
                 rows=rows_affected,
             )
+
+        maintain_loaded_tables(engine_sql18, successful_tables, logger)
 
     except Exception as e:
 
