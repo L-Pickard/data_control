@@ -62,7 +62,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("INFO", table, action, message, rows)
+        return self.log(level="INFO", table=table, action=action, message=message, rows=rows)
 
     def debug(
         self,
@@ -71,7 +71,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("DEBUG", table, action, message, rows)
+        return self.log(level="DEBUG", table=table, action=action, message=message, rows=rows)
 
     def warning(
         self,
@@ -80,7 +80,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("WARNING", table, action, message, rows)
+        return self.log(level="WARNING", table=table, action=action, message=message, rows=rows)
 
     def error(
         self,
@@ -89,7 +89,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("ERROR", table, action, message, rows)
+        return self.log(level="ERROR", table=table, action=action, message=message, rows=rows)
 
     def critical(
         self,
@@ -98,7 +98,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("CRITICAL", table, action, message, rows)
+        return self.log(level="CRITICAL", table=table, action=action, message=message, rows=rows)
 
     def success(
         self,
@@ -107,7 +107,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("SUCCESS", table, action, message, rows)
+        return self.log(level="SUCCESS", table=table, action=action, message=message, rows=rows)
 
     def failure(
         self,
@@ -116,7 +116,7 @@ class DatabaseLogger:
         message: str = "",
         rows: int | None = None,
     ) -> LogRecord:
-        return self.log("FAILURE", table, action, message, rows)
+        return self.log(level="FAILURE", table=table, action=action, message=message, rows=rows)
 
     def to_dataframe(self) -> DataFrame:
 
@@ -163,7 +163,7 @@ class DatabaseLogger:
         try:
             df = self.to_dataframe()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"an error occurred writing log records to a pandas dataframe. Error: {e}"
 
         try:

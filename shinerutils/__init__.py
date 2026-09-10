@@ -48,7 +48,6 @@ from .sql import (
     write_df_to_sql_db,
 )
 from .updates.brands import update_brands_table
-from .updates.brand_forecast import update_brand_forecast_table
 from .updates.countries import update_countries_table
 from .updates.customers import update_customers_table
 from .updates.dates import update_dates_table
@@ -127,7 +126,6 @@ __all__ = [
     "sync_item_images_to_sharepoint",
     "transactional_connection",
     "update_brands_table",
-    "update_brand_forecast_table",
     "update_countries_table",
     "update_customers_table",
     "update_dates_table",

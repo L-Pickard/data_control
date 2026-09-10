@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from ftplib import FTP
+from ftplib import FTP, all_errors
 from pathlib import Path
 
 FTP_TIMEOUT_SECONDS = 120
@@ -43,21 +43,19 @@ def get_ftp_connection(
 ) -> tuple[FTP | None, str | None]:
     """Return an authenticated FTP connection or an error message."""
 
+    server = os.environ.get(server_env)
+    username = os.environ.get(user_env)
+    password = os.environ.get(password_env)
+    if not server or not username or not password:
+        return None, f"FTP credentials require {server_env}, {user_env}, and {password_env}"
+
     ftp = None
     try:
-        server = os.environ.get(server_env)
-        username = os.environ.get(user_env)
-        password = os.environ.get(password_env)
-        if not server or not username or not password:
-            raise RuntimeError(
-                f"FTP credentials require {server_env}, {user_env}, and {password_env}"
-            )
-
         ftp = FTP(timeout=timeout_seconds)
         ftp.connect(server)
         ftp.login(username, password)
         return ftp, None
-    except Exception as e:  # noqa: BLE001
+    except all_errors as e:
         if ftp is not None:
             ftp.close()
         return None, str(e)
@@ -71,7 +69,7 @@ def list_ftp_files(
     try:
         ftp.cwd(directory)
         return ftp.nlst(), None
-    except Exception as e:  # noqa: BLE001
+    except all_errors as e:
         return None, str(e)
 
 
@@ -85,7 +83,7 @@ def download_ftp_file(
         with local_path.open("wb") as local_file:
             ftp.retrbinary(f"RETR {remote_name}", local_file.write)
         return None
-    except Exception as e:  # noqa: BLE001
+    except all_errors as e:
         return str(e)
 
 
@@ -95,5 +93,5 @@ def delete_ftp_file(ftp: FTP, remote_name: str) -> str | None:
     try:
         ftp.delete(remote_name)
         return None
-    except Exception as e:  # noqa: BLE001
+    except all_errors as e:
         return str(e)

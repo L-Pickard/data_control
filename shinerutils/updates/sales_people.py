@@ -45,11 +45,11 @@ def update_sales_people_table(
             df_sql02, err_sql02 = future_sql02.result()
             df_sql04, err_sql04 = future_sql04.result()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(
-                "sales_people",
-                action,
-                f"an error occurred. Error: {e}",
+                table="sales_people",
+                action=action,
+                message=f"an error occurred. Error: {e}",
             )
 
             return None
@@ -57,17 +57,17 @@ def update_sales_people_table(
     if err_sql02 is not None:
         action = "Execute sql02 sales_people query and return results as a dataframe."
         logger.error(
-            "sales_people",
-            action,
-            err_sql02,
+            table="sales_people",
+            action=action,
+            message=err_sql02,
         )
 
     if err_sql04 is not None:
         action = "Execute sql04 sales_people query and return results as a dataframe."
         logger.error(
-            "sales_people",
-            action,
-            err_sql04,
+            table="sales_people",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql02 is not None or err_sql04 is not None:
@@ -99,11 +99,11 @@ def update_sales_people_table(
         df["email"] = df["email"].fillna("")
         df["active"] = False
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "sales_people",
-            action,
-            f"an error occurred. Error: {e}",
+            table="sales_people",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -114,10 +114,10 @@ def update_sales_people_table(
         action = "sales_people dataframe row length check"
 
         logger.error(
-            "sales_people",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="sales_people",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -144,9 +144,9 @@ def update_sales_people_table(
             raise RuntimeError(err)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "sales_people",
-            action,
-            f"an error has occcurred. ERROR: {e}",
+            table="sales_people",
+            action=action,
+            message=f"an error has occcurred. ERROR: {e}",
         )
 
         return None
@@ -164,9 +164,9 @@ def update_sales_people_table(
         )
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "sales_people",
-            action,
-            f"an error has occurred: Error {e}",
+            table="sales_people",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None
@@ -198,9 +198,9 @@ def update_sales_people_table(
             raise RuntimeError(err)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "sales_people",
-            action,
-            f"unable to apply constraints. ERROR: {e}",
+            table="sales_people",
+            action=action,
+            message=f"unable to apply constraints. ERROR: {e}",
         )
 
         return None

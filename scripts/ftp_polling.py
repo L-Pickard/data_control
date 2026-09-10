@@ -224,9 +224,9 @@ def process_file(
 
     if error is not None:
         logger.error(
-            table_name,
-            f"download {file_name} from owtanet reporting ftp.",
-            f"Error: {error}",
+            table=table_name,
+            action=f"download {file_name} from owtanet reporting ftp.",
+            message=f"Error: {error}",
         )
 
         return finish(None)
@@ -235,9 +235,9 @@ def process_file(
 
     if error is not None:
         logger.error(
-            table_name,
-            f"delete {file_name} from owtanet reporting ftp.",
-            f"Error: {error}",
+            table=table_name,
+            action=f"delete {file_name} from owtanet reporting ftp.",
+            message=f"Error: {error}",
         )
 
         return finish(None)
@@ -255,7 +255,7 @@ def process_file(
         UnicodeDecodeError,
         ValueError,
     ) as e:
-        logger.error(table_name, action, f"Error: {e}")
+        logger.error(table=table_name, action=action, message=f"Error: {e}")
 
         return finish(None)
 
@@ -263,9 +263,9 @@ def process_file(
 
     if len(df.columns) != len(column_names):
         logger.error(
-            file_name,
-            f"read {file_name} into a dataframe",
-            (f"expected {len(column_names)} csv columns, found {len(df.columns)}"),
+            table=file_name,
+            action=f"read {file_name} into a dataframe",
+            message=(f"expected {len(column_names)} csv columns, found {len(df.columns)}"),
         )
 
         return finish(None)
@@ -291,7 +291,7 @@ def process_file(
                 )
 
     except (KeyError, OverflowError, TypeError, ValueError) as e:
-        logger.error(table_name, action, f"Error: {e}")
+        logger.error(table=table_name, action=action, message=f"Error: {e}")
 
         return finish(None)
 
@@ -307,24 +307,24 @@ def process_file(
         )
 
     except (SQLAlchemyError, OSError, TypeError, ValueError) as e:
-        logger.error(table_name, action, f"Error: {e}")
+        logger.error(table=table_name, action=action, message=f"Error: {e}")
 
         return finish(None)
 
     rows = len(df)
 
-    logger.info(table_name, action, "staging data successfully written.", rows)
+    logger.info(table=table_name, action=action, message="staging data successfully written.", rows=rows)
 
     action = f"execute procedure: {procedure_sql}"
 
     procedure_rows, err = execute_sql_procedure(engine, procedure_sql)
 
     if err is not None:
-        logger.error(table_name, action, err)
+        logger.error(table=table_name, action=action, message=err)
 
         return finish(None)
 
-    logger.info(table_name, action, "procedure executed successfully", procedure_rows)
+    logger.info(table=table_name, action=action, message="procedure executed successfully", rows=procedure_rows)
 
     return finish(rows)
 

@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 
+from pandas import concat, merge, read_csv
 from sqlalchemy.engine import Engine
-from pandas import concat, read_csv, merge
 
+from shinerutils.constants import DOCUMENTS, SELECTS_SQL04, SELECTS_SQL05
+from shinerutils.logging import DatabaseLogger
 from shinerutils.sql import execute_sql_procedure, write_df_to_sql_db
 from shinerutils.utils import concurrent_df_load
-from shinerutils.logging import DatabaseLogger
-from shinerutils.constants import SELECTS_SQL04, SELECTS_SQL05, DOCUMENTS
 
 
 def update_countries_table(
@@ -40,9 +40,9 @@ def update_countries_table(
     except Exception as e:
 
         logger.error(
-            "countries",
-            action,
-            f"an error occurred. Error: {e}",
+            table="countries",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -50,17 +50,17 @@ def update_countries_table(
     if err_sql04 is not None:
         action = "read in and execute sql04 countries query and return results as a dataframe."
         logger.error(
-            "countries",
-            action,
-            err_sql04,
+            table="countries",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql05 is not None:
         action = "read in and execute sql05 countries query and return results as a dataframe."
         logger.error(
-            "countries",
-            action,
-            err_sql05,
+            table="countries",
+            action=action,
+            message=err_sql05,
         )
 
     if err_sql04 is not None or err_sql05 is not None:
@@ -83,9 +83,9 @@ def update_countries_table(
 
     except Exception as e:
         logger.error(
-            "countries",
-            action,
-            f"an error occurred. Error: {e}",
+            table="countries",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -96,10 +96,10 @@ def update_countries_table(
         action = "countries dataframe row length check"
 
         logger.error(
-            "countries",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="countries",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -119,9 +119,9 @@ def update_countries_table(
     except Exception as e:
 
         logger.error(
-            "countries",
-            action,
-            f"an error occurred. Error: {e}",
+            table="countries",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -149,9 +149,9 @@ def update_countries_table(
             raise RuntimeError(err)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "countries",
-            action,
-            f"an error has occurred. ERROR: {e}",
+            table="countries",
+            action=action,
+            message=f"an error has occurred. ERROR: {e}",
         )
 
         return None
@@ -162,9 +162,9 @@ def update_countries_table(
         write_df_to_sql_db(engine_sql18, "countries", df, "append", rows)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "countries",
-            action,
-            f"an error has occurred: Error {e}",
+            table="countries",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None
@@ -203,9 +203,9 @@ def update_countries_table(
             raise RuntimeError(err)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "countries",
-            action,
-            f"unable to apply constraints. ERROR: {e}",
+            table="countries",
+            action=action,
+            message=f"unable to apply constraints. ERROR: {e}",
         )
 
         return None

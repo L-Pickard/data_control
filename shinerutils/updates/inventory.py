@@ -56,13 +56,13 @@ def update_inventory_table(
             df_nav, nav_error = nav_future.result()
             df_llc, llc_error = llc_future.result()
         except Exception as exc:  # noqa: BLE001
-            logger.error(TABLE, "load inventory sources", str(exc))
+            logger.error(table=TABLE, action="load inventory sources", message=str(exc))
             return None
 
     if nav_error is not None:
-        logger.error(TABLE, "execute NAV inventory query", nav_error)
+        logger.error(table=TABLE, action="execute NAV inventory query", message=nav_error)
     if llc_error is not None:
-        logger.error(TABLE, "execute LLC inventory query", llc_error)
+        logger.error(table=TABLE, action="execute LLC inventory query", message=llc_error)
     if nav_error is not None or llc_error is not None:
         return None
 
@@ -98,5 +98,5 @@ def update_inventory_table(
                 )
         except Exception:  # noqa: BLE001
             pass
-        logger.error(TABLE, "validate and replace inventory data", str(exc))
+        logger.error(table=TABLE, action="validate and replace inventory data", message=str(exc))
         return None

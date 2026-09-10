@@ -136,9 +136,9 @@ def update_items_table(
 
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "items",
-            action,
-            f"an error occurred. Error: {e}",
+            table="items",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -148,9 +148,9 @@ def update_items_table(
             "read in and execute sql02 items query and return results as a dataframe"
         )
         logger.error(
-            "items",
-            action,
-            err_sql02,
+            table="items",
+            action=action,
+            message=err_sql02,
         )
 
     if err_sql04 is not None:
@@ -158,9 +158,9 @@ def update_items_table(
             "read in and execute sql04 items query and return results as a dataframe"
         )
         logger.error(
-            "items",
-            action,
-            err_sql04,
+            table="items",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql02 is not None or err_sql04 is not None:
@@ -193,11 +193,11 @@ def update_items_table(
                 df[col] = df[col].combine_first(df[sql04_col])
                 df = df.drop(columns=[sql04_col])
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "items",
-            action,
-            f"an error occurred. Error: {e}",
+            table="items",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
         return None
 
@@ -207,10 +207,10 @@ def update_items_table(
         action = "items dataframe row length check"
 
         logger.error(
-            "items",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="items",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -246,9 +246,9 @@ def update_items_table(
         except Exception:  # noqa: BLE001, S110
             pass
         logger.error(
-            "items",
-            action,
-            f"an error has occurred: Error {e}",
+            table="items",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None

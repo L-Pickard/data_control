@@ -10,7 +10,6 @@ def main() -> None:
     from shinerutils.logging import DatabaseLogger
     from shinerutils import (
         get_sqlalchemy_engine,
-        update_brand_forecast_table,
         update_brands_table,
         update_countries_table,
         update_customers_table,
@@ -54,9 +53,9 @@ def main() -> None:
             print("An error occurred updating sales_people table")
 
             logger.failure(
-                "sales_people",
-                action,
-                "sales_people table update has failed",
+                table="sales_people",
+                action=action,
+                message="sales_people table update has failed",
             )
 
         else:
@@ -66,10 +65,10 @@ def main() -> None:
             )
 
             logger.success(
-                "sales_people",
-                action,
-                f"sales_people table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="sales_people",
+                action=action,
+                message=f"sales_people table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # execute function to update countries table and log wether it resulted in success or failure
@@ -84,9 +83,9 @@ def main() -> None:
             print("An error occurred updating countries table")
 
             logger.failure(
-                "countries",
-                action,
-                "countries table update has failed",
+                table="countries",
+                action=action,
+                message="countries table update has failed",
             )
 
         else:
@@ -96,10 +95,10 @@ def main() -> None:
             )
 
             logger.success(
-                "countries",
-                action,
-                f"countries table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="countries",
+                action=action,
+                message=f"countries table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # execute function to update customers table and log wether it resulted in success or failure
@@ -114,9 +113,9 @@ def main() -> None:
             print("An error occurred updating customers table")
 
             logger.failure(
-                "customers",
-                action,
-                "customers table update has failed",
+                table="customers",
+                action=action,
+                message="customers table update has failed",
             )
 
         else:
@@ -126,10 +125,10 @@ def main() -> None:
             )
 
             logger.success(
-                "customers",
-                action,
-                f"customers table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="customers",
+                action=action,
+                message=f"customers table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # Update the vendor dimension after its country and purchaser dimensions.
@@ -143,9 +142,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating vendors table")
             logger.failure(
-                "vendors",
-                action,
-                "vendors table update has failed",
+                table="vendors",
+                action=action,
+                message="vendors table update has failed",
             )
         else:
             print(
@@ -153,11 +152,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "vendors",
-                action,
-                f"vendors table has successfully been updated. {rows_affected} "
+                table="vendors",
+                action=action,
+                message=f"vendors table has successfully been updated. {rows_affected} "
                 "were inserted. old data was replaced.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # execute function to update brands table and log whether it resulted in success or failure
@@ -170,9 +169,9 @@ def main() -> None:
             print("An error occurred updating brands table")
 
             logger.failure(
-                "brands",
-                action,
-                "brands table update has failed",
+                table="brands",
+                action=action,
+                message="brands table update has failed",
             )
 
         else:
@@ -182,10 +181,10 @@ def main() -> None:
             )
 
             logger.success(
-                "brands",
-                action,
-                f"brands table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="brands",
+                action=action,
+                message=f"brands table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # execute function to update items table and log whether it resulted in success or failure
@@ -200,9 +199,9 @@ def main() -> None:
             print("An error occurred updating items table")
 
             logger.failure(
-                "items",
-                action,
-                "items table update has failed",
+                table="items",
+                action=action,
+                message="items table update has failed",
             )
 
         else:
@@ -212,10 +211,10 @@ def main() -> None:
             )
 
             logger.success(
-                "items",
-                action,
-                f"items table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="items",
+                action=action,
+                message=f"items table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # Inventory depends on the global item and brand dimensions.
@@ -228,18 +227,18 @@ def main() -> None:
 
         if rows_affected is None:
             print("An error occurred updating inventory table")
-            logger.failure("inventory", action, "inventory table update has failed")
+            logger.failure(table="inventory", action=action, message="inventory table update has failed")
         else:
             print(
                 "inventory table has been successfully updated, rows affected: ",
                 rows_affected,
             )
             logger.success(
-                "inventory",
-                action,
-                f"inventory table has successfully been updated. "
+                table="inventory",
+                action=action,
+                message=f"inventory table has successfully been updated. "
                 f"{rows_affected} rows were inserted; old data was replaced.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # Image selection uses record links, so refresh them after items and
@@ -254,9 +253,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating record_link table")
             logger.failure(
-                "record_link",
-                action,
-                "record_link table update has failed",
+                table="record_link",
+                action=action,
+                message="record_link table update has failed",
             )
         else:
             print(
@@ -264,11 +263,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "record_link",
-                action,
-                f"record_link table has successfully been updated. "
+                table="record_link",
+                action=action,
+                message=f"record_link table has successfully been updated. "
                 f"{rows_affected} rows were inserted. old data was replaced.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # Images depend on the refreshed item and record-link dimensions.
@@ -280,9 +279,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating item image tables")
             logger.failure(
-                "item_images",
-                action,
-                "item image table update has failed",
+                table="item_images",
+                action=action,
+                message="item image table update has failed",
             )
         else:
             print(
@@ -291,11 +290,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "item_images",
-                action,
-                f"item image tables have successfully been updated. "
+                table="item_images",
+                action=action,
+                message=f"item image tables have successfully been updated. "
                 f"{rows_affected} locations were inserted.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         rows_affected = update_item_packaging_table(engine_sql18, logger)
@@ -303,14 +302,14 @@ def main() -> None:
 
         if rows_affected is None:
             print("An error occurred updating item_packaging table")
-            logger.failure("item_packaging", action, "item_packaging table update failed")
+            logger.failure(table="item_packaging", action=action, message="item_packaging table update failed")
         else:
             print(f"item_packaging table successfully updated, rows affected: {rows_affected}")
             logger.success(
-                "item_packaging",
-                action,
-                f"item_packaging successfully updated; {rows_affected} rows inserted",
-                rows_affected,
+                table="item_packaging",
+                action=action,
+                message=f"item_packaging successfully updated; {rows_affected} rows inserted",
+                rows=rows_affected,
             )
 
         # execute function to update exchange_rates table and log whether it resulted in success or failure
@@ -325,9 +324,9 @@ def main() -> None:
             print("An error occurred updating exchange_rates table")
 
             logger.failure(
-                "exchange_rates",
-                action,
-                "exchange_rates table update has failed",
+                table="exchange_rates",
+                action=action,
+                message="exchange_rates table update has failed",
             )
 
         else:
@@ -337,10 +336,10 @@ def main() -> None:
             )
 
             logger.success(
-                "exchange_rates",
-                action,
-                f"exchange_rates table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="exchange_rates",
+                action=action,
+                message=f"exchange_rates table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
         # Refresh forecast exchange rates and flag forecasts when rates change.
@@ -354,17 +353,17 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating monthly_avg_xr table")
             logger.failure(
-                "monthly_avg_xr",
-                action,
-                "monthly_avg_xr table update has failed",
+                table="monthly_avg_xr",
+                action=action,
+                message="monthly_avg_xr table update has failed",
             )
         elif rows_affected == 0:
             print("monthly_avg_xr source is unchanged")
             logger.success(
-                "monthly_avg_xr",
-                action,
-                "monthly_avg_xr source is unchanged; no rows were replaced",
-                0,
+                table="monthly_avg_xr",
+                action=action,
+                message="monthly_avg_xr source is unchanged; no rows were replaced",
+                rows=0,
             )
         else:
             print(
@@ -372,38 +371,10 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "monthly_avg_xr",
-                action,
-                f"monthly_avg_xr successfully updated; {rows_affected} rows inserted",
-                rows_affected,
-            )
-
-        # Refresh the forecast every day. It is a separate source snapshot and
-        # must also populate a newly created or previously emptied table when
-        # the monthly exchange-rate snapshot itself is unchanged.
-
-        forecast_rows = update_brand_forecast_table(
-            engine_finance, engine_sql18, logger
-        )
-        forecast_action = "update [data_control].[dbo].[brand_forecast] table"
-
-        if forecast_rows is None:
-            print("An error occurred updating brand_forecast table")
-            logger.failure(
-                "brand_forecast",
-                forecast_action,
-                "brand_forecast table update has failed",
-            )
-        else:
-            print(
-                "brand_forecast table successfully updated, rows affected: ",
-                forecast_rows,
-            )
-            logger.success(
-                "brand_forecast",
-                forecast_action,
-                f"brand_forecast successfully updated; {forecast_rows} rows inserted",
-                forecast_rows,
+                table="monthly_avg_xr",
+                action=action,
+                message=f"monthly_avg_xr successfully updated; {rows_affected} rows inserted",
+                rows=rows_affected,
             )
 
         # Update preorders after the brand and country dimensions.
@@ -415,9 +386,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating preorders table")
             logger.failure(
-                "preorders",
-                action,
-                "preorders table update has failed",
+                table="preorders",
+                action=action,
+                message="preorders table update has failed",
             )
         else:
             print(
@@ -425,11 +396,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "preorders",
-                action,
-                f"preorders successfully updated; "
+                table="preorders",
+                action=action,
+                message=f"preorders successfully updated; "
                 f"{rows_affected} source rows processed",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # Update purchase orders after the vendor and item dimensions.
@@ -443,9 +414,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating purchase_orders table")
             logger.failure(
-                "purchase_orders",
-                action,
-                "purchase_orders table update has failed",
+                table="purchase_orders",
+                action=action,
+                message="purchase_orders table update has failed",
             )
         else:
             print(
@@ -453,11 +424,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "purchase_orders",
-                action,
-                f"purchase_orders table has successfully been updated. "
+                table="purchase_orders",
+                action=action,
+                message=f"purchase_orders table has successfully been updated. "
                 f"{rows_affected} rows were inserted. old data was replaced.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # Update current sales orders after their customer, item and date dimensions.
@@ -471,9 +442,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating sales_orders table")
             logger.failure(
-                "sales_orders",
-                action,
-                "sales_orders table update has failed",
+                table="sales_orders",
+                action=action,
+                message="sales_orders table update has failed",
             )
         else:
             print(
@@ -481,11 +452,11 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "sales_orders",
-                action,
-                f"sales_orders table has successfully been updated. "
+                table="sales_orders",
+                action=action,
+                message=f"sales_orders table has successfully been updated. "
                 f"{rows_affected} rows were inserted. old data was replaced.",
-                rows_affected,
+                rows=rows_affected,
             )
 
         # Update sales after all dimensions and exchange rates are available.
@@ -499,9 +470,9 @@ def main() -> None:
         if rows_affected is None:
             print("An error occurred updating sales table")
             logger.failure(
-                "sales",
-                action,
-                "sales table update has failed",
+                table="sales",
+                action=action,
+                message="sales table update has failed",
             )
         else:
             print(
@@ -509,18 +480,18 @@ def main() -> None:
                 rows_affected,
             )
             logger.success(
-                "sales",
-                action,
-                f"sales table has successfully been updated. "
+                table="sales",
+                action=action,
+                message=f"sales table has successfully been updated. "
                 f"{rows_affected} rows were affected.",
-                rows_affected,
+                rows=rows_affected,
             )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.critical(
-            None,
-            "run daily updates",
-            f"daily update run crashed. Error: {e}",
+            table=None,
+            action="run daily updates",
+            message=f"daily update run crashed. Error: {e}",
         )
         raise
 

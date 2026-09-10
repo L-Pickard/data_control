@@ -35,13 +35,13 @@ def update_vendors_table(
             df_sql02, err_sql02 = future_sql02.result()
             df_sql04, err_sql04 = future_sql04.result()
         except Exception as exc:  # noqa: BLE001
-            logger.error("vendors", action, f"an error occurred. Error: {exc}")
+            logger.error(table="vendors", action=action, message=f"an error occurred. Error: {exc}")
             return None
 
     if err_sql02 is not None:
-        logger.error("vendors", "execute sql02 vendors query", err_sql02)
+        logger.error(table="vendors", action="execute sql02 vendors query", message=err_sql02)
     if err_sql04 is not None:
-        logger.error("vendors", "execute sql04 vendors query", err_sql04)
+        logger.error(table="vendors", action="execute sql04 vendors query", message=err_sql04)
     if err_sql02 is not None or err_sql04 is not None:
         return None
 
@@ -56,16 +56,16 @@ def update_vendors_table(
         vendor_ids = set(df["vendor_id"].dropna())
         df.loc[~df["pay_to_vendor_id"].isin(vendor_ids), "pay_to_vendor_id"] = None
     except Exception as exc:  # noqa: BLE001
-        logger.error("vendors", action, f"an error occurred. Error: {exc}")
+        logger.error(table="vendors", action=action, message=f"an error occurred. Error: {exc}")
         return None
 
     rows = len(df)
     if rows == 0:
         logger.error(
-            "vendors",
-            "vendors dataframe row length check",
-            "the dataframe has no rows of data",
-            0,
+            table="vendors",
+            action="vendors dataframe row length check",
+            message="the dataframe has no rows of data",
+            rows=0,
         )
         return None
 
@@ -105,7 +105,7 @@ def update_vendors_table(
                 "CHECK CONSTRAINT [FK_purchase_orders_vendors];"
             )
     except Exception as exc:  # noqa: BLE001
-        logger.error("vendors", action, f"an error has occurred: Error {exc}")
+        logger.error(table="vendors", action=action, message=f"an error has occurred: Error {exc}")
         return None
 
     return rows

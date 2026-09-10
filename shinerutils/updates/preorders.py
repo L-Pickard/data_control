@@ -41,7 +41,7 @@ def update_preorders_table(
         TABLE,
     )
     if error is not None:
-        logger.error(TABLE, "read Finance preorders", error)
+        logger.error(table=TABLE, action="read Finance preorders", message=error)
         return None
 
     assert df is not None, "df should not be None when no error was returned"
@@ -75,5 +75,5 @@ def update_preorders_table(
                 )
         except Exception:  # noqa: BLE001
             pass
-        logger.error(TABLE, "update accumulated preorders", str(exc))
+        logger.error(table=TABLE, action="update accumulated preorders", message=str(exc))
         return None

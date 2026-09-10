@@ -344,7 +344,7 @@ def _upload_paths(
                     upload_sharepoint_file(session, drive_id, path)
                 except FileExistsError:
                     existed = True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     stop.set()
                     raise
 
@@ -434,11 +434,11 @@ def _upload_missing_images(
         )
 
         logger.info(
-            TABLE,
-            "check missing SharePoint images",
-            f"found {len(product_paths)} product and {len(thumbnail_paths)} "
+            table=TABLE,
+            action="check missing SharePoint images",
+            message=f"found {len(product_paths)} product and {len(thumbnail_paths)} "
             "thumbnail images to upload",
-            len(product_paths) + len(thumbnail_paths),
+            rows=len(product_paths) + len(thumbnail_paths),
         )
         _progress(
             f"Comparison complete: {len(product_paths):,} Product Images and "
@@ -748,10 +748,10 @@ def _product_image_links(
 
     if ignored:
         logger.warning(
-            TABLE,
-            "validate Item Docs record links",
-            f"ignored {ignored} image links outside the configured Item Docs root",
-            ignored,
+            table=TABLE,
+            action="validate Item Docs record links",
+            message=f"ignored {ignored} image links outside the configured Item Docs root",
+            rows=ignored,
         )
     return sorted(files.values(), key=lambda value: str(value[0]).casefold())
 
@@ -818,12 +818,12 @@ def sync_item_images_to_sharepoint(
             if dry_run
             else f"uploaded {result.total} missing images without replacing existing files"
         )
-        logger.info(TABLE, action, message, result.total)
+        logger.info(table=TABLE, action=action, message=message, rows=result.total)
         _progress(message.capitalize() + ".")
         return result
     except Exception as exc:  # noqa: BLE001
         _progress(f"ERROR: {exc}")
-        logger.error(TABLE, "synchronize SharePoint images", str(exc))
+        logger.error(table=TABLE, action="synchronize SharePoint images", message=str(exc))
         return None
 
 
@@ -866,11 +866,11 @@ def update_item_images_table(
             logger,
         )
         logger.info(
-            TABLE,
-            "upload missing SharePoint images",
-            f"uploaded {upload_result.total} missing images without replacing "
+            table=TABLE,
+            action="upload missing SharePoint images",
+            message=f"uploaded {upload_result.total} missing images without replacing "
             "existing files",
-            upload_result.total,
+            rows=upload_result.total,
         )
 
         _progress("Reading final SharePoint and network image metadata...")
@@ -938,29 +938,29 @@ def update_item_images_table(
             strict=True,
         ):
             logger.info(
-                TABLE,
-                f"scan {source}",
-                f"discovered {len(records)} image files",
-                len(records),
+                table=TABLE,
+                action=f"scan {source}",
+                message=f"discovered {len(records)} image files",
+                rows=len(records),
             )
 
         frame, unmatched = _combine_locations(source_records)
         if unmatched:
             logger.warning(
-                TABLE,
-                "match images to items",
-                f"ignored {unmatched} source files that did not match an item",
-                unmatched,
+                table=TABLE,
+                action="match images to items",
+                message=f"ignored {unmatched} source files that did not match an item",
+                rows=unmatched,
             )
 
         _progress("Writing staging data and executing update_item_images_table...")
         _replace_images(engine_sql18, frame)
         logical_images = frame[["item_id", "image_type", "image_key"]].drop_duplicates()
         logger.info(
-            TABLE,
-            "replace item images",
-            f"loaded {len(logical_images)} logical images and {len(frame)} locations",
-            len(logical_images),
+            table=TABLE,
+            action="replace item images",
+            message=f"loaded {len(logical_images)} logical images and {len(frame)} locations",
+            rows=len(logical_images),
         )
         _progress(
             f"SQL catalogue refresh complete: {len(logical_images):,} logical "
@@ -976,5 +976,5 @@ def update_item_images_table(
         except Exception:  # noqa: BLE001, S110
             pass
         _progress(f"ERROR: {exc}")
-        logger.error(TABLE, "update item images", str(exc))
+        logger.error(table=TABLE, action="update item images", message=str(exc))
         return None

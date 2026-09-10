@@ -359,7 +359,7 @@ def open_sharepoint_excel_desktop(web_url) -> str | None:
 
         return None
     
-    except Exception as e:
+    except OSError as e:
         return str(e)
 
 

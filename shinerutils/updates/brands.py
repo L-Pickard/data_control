@@ -11,18 +11,17 @@ writing the result to a staging table, and executing the update_brands_table sto
 ========================================================================================================================
 """
 
-from sqlalchemy.engine import Engine
+from pandas import merge, read_csv
 from sqlalchemy.dialects.mssql import NVARCHAR
-from pandas import read_csv, merge
+from sqlalchemy.engine import Engine
 
+from shinerutils.constants import DOCUMENTS, SELECTS_SQL02
+from shinerutils.logging import DatabaseLogger
 from shinerutils.sql import (
     execute_sql_procedure,
     fetch_sql_dataframe,
     write_df_to_sql_db,
 )
-from shinerutils.logging import DatabaseLogger
-from shinerutils.constants import SELECTS_SQL02, DOCUMENTS
-
 
 OPTIONAL_TEXT_COLUMNS = (
     "brand_name",
@@ -52,20 +51,20 @@ def update_brands_table(
     try:
         query = query_path.read_text(encoding="utf-8")
 
-        logger.info(
-            "brands",
-            action,
-            "shinersql02 brands query file read successfully",
-        )
-
-    except Exception as e:
+    except (OSError, UnicodeError) as e:
         logger.error(
-            "brands",
-            action,
-            f"error reading query file. ERROR: {str(e)}",
+            table="brands",
+            action=action,
+            message=f"error reading query file. ERROR: {str(e)}",
         )
 
         return None
+
+    logger.info(
+        table="brands",
+        action=action,
+        message="shinersql02 brands query file read successfully",
+    )
 
     action = "execute shinersql02 brand table query against db"
 
@@ -73,18 +72,18 @@ def update_brands_table(
 
     if err is not None:
         logger.error(
-            "brands",
-            action,
-            f"error executing query. ERROR: {err}",
+            table="brands",
+            action=action,
+            message=f"error executing query. ERROR: {err}",
         )
 
         return None
 
     if df is None:
         logger.error(
-            "brands",
-            action,
-            "ERROR: the dataframe returned is none.",
+            table="brands",
+            action=action,
+            message="ERROR: the dataframe returned is none.",
         )
 
         return None
@@ -108,11 +107,11 @@ def update_brands_table(
 
         df = normalize_optional_brand_text(df)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "brands",
-            action,
-            f"error joining dataframes. ERROR: {str(e)}",
+            table="brands",
+            action=action,
+            message=f"error joining dataframes. ERROR: {str(e)}",
         )
 
         return None
@@ -123,9 +122,9 @@ def update_brands_table(
 
     if rows == 0:
         logger.error(
-            "brands",
-            action,
-            "dataframe contains no rows of data",
+            table="brands",
+            action=action,
+            message="dataframe contains no rows of data",
         )
 
         return None
@@ -148,18 +147,18 @@ def update_brands_table(
         )
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "brands",
-            action,
-            f"error writing table. ERROR: {e}",
+            table="brands",
+            action=action,
+            message=f"error writing table. ERROR: {e}",
         )
 
         return None
 
     logger.info(
-        "brands",
-        action,
-        "successfully written data to database brand staging table",
-        rows,
+        table="brands",
+        action=action,
+        message="successfully written data to database brand staging table",
+        rows=rows,
     )
 
     action = "execute update_brands_table stored procedure"
@@ -172,18 +171,18 @@ def update_brands_table(
             raise RuntimeError(err)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "brands",
-            action,
-            f"error executing query. ERROR: {e}",
+            table="brands",
+            action=action,
+            message=f"error executing query. ERROR: {e}",
         )
 
         return None
 
     logger.info(
-        "brands",
-        action,
-        "successfully executed stored procedure",
-        rows,
+        table="brands",
+        action=action,
+        message="successfully executed stored procedure",
+        rows=rows,
     )
 
     return rows

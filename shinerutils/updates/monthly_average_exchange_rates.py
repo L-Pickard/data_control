@@ -1,3 +1,7 @@
+from datetime import date, datetime
+from decimal import Decimal
+from numbers import Real
+
 from pandas import DataFrame, offsets, to_datetime
 from sqlalchemy.engine import Engine
 
@@ -13,16 +17,34 @@ KEY_COLUMNS = ["end_date", "currency_pair_code"]
 
 
 def _validate_rates(df: DataFrame) -> DataFrame:
+    required = [*KEY_COLUMNS, "start_date", "from_currency_code", "to_currency_code", "exchange_rate_value"]
+    if not df.columns.is_unique:
+        raise ValueError("monthly average exchange rates have duplicate columns")
+    missing = sorted(set(required) - set(df.columns))
+    if missing:
+        raise ValueError(f"monthly average exchange rates are missing columns: {missing}")
     if df.empty:
         raise ValueError("the Finance monthly average exchange-rate query returned no rows")
     if df.isna().any().any():
         raise ValueError("monthly average exchange rates contain NULL values")
+    for column in ["from_currency_code", "to_currency_code", "currency_pair_code"]:
+        if not df[column].map(lambda value: isinstance(value, str)).all():
+            raise ValueError(f"monthly average exchange rates {column} must contain text")
+    if not df["exchange_rate_value"].map(
+        lambda value: isinstance(value, (Real, Decimal)) and not isinstance(value, bool)
+    ).all():
+        raise ValueError("monthly average exchange rates must contain numeric rates")
+    for column in ["start_date", "end_date"]:
+        if not df[column].map(lambda value: isinstance(value, (str, date, datetime))).all():
+            raise ValueError(f"monthly average exchange rates {column} must contain dates or date strings")
     if df.duplicated(subset=KEY_COLUMNS).any():
         raise ValueError("monthly average exchange rates contain duplicate keys")
 
     df = df.copy()
     df["start_date"] = to_datetime(df["start_date"])
     df["end_date"] = to_datetime(df["end_date"])
+    if df[["start_date", "end_date"]].isna().any().any():
+        raise ValueError("monthly average exchange rates contain missing dates")
 
     expected_start = df["start_date"].dt.to_period("M").dt.start_time
     expected_end = df["start_date"] + offsets.MonthEnd(0)
@@ -57,14 +79,14 @@ def update_monthly_average_exchange_rates_table(
         TABLE,
     )
     if error is not None:
-        logger.error(TABLE, "read Finance monthly rates", error)
+        logger.error(table=TABLE, action="read Finance monthly rates", message=error)
         return None
 
     assert df is not None, "df should not be None when no error was returned"
     try:
         df = _validate_rates(df)
-    except Exception as exc:  # noqa: BLE001
-        logger.error(TABLE, "validate Finance monthly rates", str(exc))
+    except ValueError as exc:
+        logger.error(table=TABLE, action="validate Finance monthly rates", message=str(exc))
         return None
 
     try:
@@ -112,7 +134,7 @@ def update_monthly_average_exchange_rates_table(
             )
 
         if not changed:
-            logger.info(TABLE, "compare Finance monthly rates", "source is unchanged", 0)
+            logger.info(table=TABLE, action="compare Finance monthly rates", message="source is unchanged", rows=0)
             return 0
 
         return len(df)
@@ -125,5 +147,5 @@ def update_monthly_average_exchange_rates_table(
                 )
         except Exception:  # noqa: BLE001
             pass
-        logger.error(TABLE, "refresh monthly average exchange rates", str(exc))
+        logger.error(table=TABLE, action="refresh monthly average exchange rates", message=str(exc))
         return None

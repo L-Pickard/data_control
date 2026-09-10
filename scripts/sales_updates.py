@@ -36,9 +36,9 @@ def main() -> None:
             print("An error occurred updating sales table")
 
             logger.failure(
-                "sales",
-                action,
-                "sales table update has failed",
+                table="sales",
+                action=action,
+                message="sales table update has failed",
             )
 
         else:
@@ -48,18 +48,18 @@ def main() -> None:
             )
 
             logger.success(
-                "sales",
-                action,
-                f"sales table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
-                rows_affected,
+                table="sales",
+                action=action,
+                message=f"sales table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                rows=rows_affected,
             )
 
  
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.critical(
-            None,
-            "run daily updates",
-            f"daily update run crashed. Error: {e}",
+            table=None,
+            action="run daily updates",
+            message=f"daily update run crashed. Error: {e}",
         )
         raise
 

@@ -51,13 +51,13 @@ def update_purchase_orders_table(
             df_nav, err_sql02 = future_nav.result()
             df_sql04, err_sql04 = future_sql04.result()
         except Exception as exc:  # noqa: BLE001
-            logger.error("purchase_orders", action, f"Error: {exc}")
+            logger.error(table="purchase_orders", action=action, message=f"Error: {exc}")
             return None
 
     if err_sql02 is not None:
-        logger.error("purchase_orders", "execute NAV purchase-order query", err_sql02)
+        logger.error(table="purchase_orders", action="execute NAV purchase-order query", message=err_sql02)
     if err_sql04 is not None:
-        logger.error("purchase_orders", "execute SQL04 purchase-order query", err_sql04)
+        logger.error(table="purchase_orders", action="execute SQL04 purchase-order query", message=err_sql04)
     if err_sql02 is not None or err_sql04 is not None:
         return None
 
@@ -76,16 +76,16 @@ def update_purchase_orders_table(
         df.loc[~df["vendor_id"].isin(vendor_ids), "vendor_id"] = None
         df.loc[~df["item_id"].isin(item_ids), "item_id"] = None
     except Exception as exc:  # noqa: BLE001
-        logger.error("purchase_orders", action, f"Error: {exc}")
+        logger.error(table="purchase_orders", action=action, message=f"Error: {exc}")
         return None
 
     rows = len(df)
     if rows == 0:
         logger.error(
-            "purchase_orders",
-            "purchase-orders dataframe row length check",
-            "the dataframe has no rows of data",
-            0,
+            table="purchase_orders",
+            action="purchase-orders dataframe row length check",
+            message="the dataframe has no rows of data",
+            rows=0,
         )
         return None
 
@@ -102,7 +102,7 @@ def update_purchase_orders_table(
                 chunksize=min(rows, 20000),
             )
     except Exception as exc:  # noqa: BLE001
-        logger.error("purchase_orders", action, f"Error: {exc}")
+        logger.error(table="purchase_orders", action=action, message=f"Error: {exc}")
         return None
 
     return rows

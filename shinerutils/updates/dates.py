@@ -153,7 +153,7 @@ def update_dates_table(engine_sql18: Engine, logger: DatabaseLogger) -> int | No
         )
         if error is not None:
             raise RuntimeError(error)
-        logger.info(TABLE, "update dates", f"loaded {len(frame)} dates", len(frame))
+        logger.info(table=TABLE, action="update dates", message=f"loaded {len(frame)} dates", rows=len(frame))
         return len(frame)
     except Exception as exc:  # noqa: BLE001
         try:
@@ -161,5 +161,5 @@ def update_dates_table(engine_sql18: Engine, logger: DatabaseLogger) -> int | No
                 connection.exec_driver_sql("DROP TABLE IF EXISTS [dbo].[dates_staging];")
         except Exception:  # noqa: BLE001, S110
             pass
-        logger.error(TABLE, "update dates", str(exc))
+        logger.error(table=TABLE, action="update dates", message=str(exc))
         return None

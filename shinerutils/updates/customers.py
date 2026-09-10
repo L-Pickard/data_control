@@ -1,12 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy.engine import Engine
 from pandas import concat
+from sqlalchemy.engine import Engine
 
+from shinerutils.constants import SELECTS_SQL02, SELECTS_SQL04
+from shinerutils.logging import DatabaseLogger
 from shinerutils.sql import write_df_to_sql_db
 from shinerutils.utils import concurrent_df_load
-from shinerutils.logging import DatabaseLogger
-from shinerutils.constants import SELECTS_SQL02, SELECTS_SQL04
 
 
 def update_customers_table(
@@ -37,12 +37,12 @@ def update_customers_table(
             df_sql02, err_sql02 = future_sql02.result()
             df_sql04, err_sql04 = future_sql04.result()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
 
             logger.error(
-                "customers",
-                action,
-                f"an error occurred. Error: {e}",
+                table="customers",
+                action=action,
+                message=f"an error occurred. Error: {e}",
             )
 
             return None
@@ -50,17 +50,17 @@ def update_customers_table(
     if err_sql02 is not None:
         action = "Execute sql02 customers query and return results as a dataframe."
         logger.error(
-            "customers",
-            action,
-            err_sql02,
+            table="customers",
+            action=action,
+            message=err_sql02,
         )
 
     if err_sql04 is not None:
         action = "Execute sql04 customers query and return results as a dataframe."
         logger.error(
-            "customers",
-            action,
-            err_sql04,
+            table="customers",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql02 is not None or err_sql04 is not None:
@@ -84,12 +84,12 @@ def update_customers_table(
             ~df["bill_to_customer_id"].isin(customer_ids), "bill_to_customer_id"
         ] = None
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
 
         logger.error(
-            "customers",
-            action,
-            f"an error occurred. Error: {e}",
+            table="customers",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -101,10 +101,10 @@ def update_customers_table(
         action = "customers dataframe row length check"
 
         logger.error(
-            "customers",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="customers",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -163,9 +163,9 @@ def update_customers_table(
             )
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "customers",
-            action,
-            f"an error has occurred: Error {e}",
+            table="customers",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None

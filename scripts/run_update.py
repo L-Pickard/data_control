@@ -30,9 +30,6 @@ class UpdateDefinition:
 # This allow-list makes the command generic without accepting arbitrary Python
 # modules, functions, SQL files, or table names from the command line.
 UPDATES: dict[str, UpdateDefinition] = {
-    "brand_forecast": UpdateDefinition(
-        "update_brand_forecast_table", ("finance", "warehouse")
-    ),
     "brands": UpdateDefinition("update_brands_table", ("sql02", "warehouse")),
     "countries": UpdateDefinition(
         "update_countries_table", ("sql04", "sql05", "warehouse")
@@ -122,15 +119,15 @@ def main() -> int:
 
         if rows_affected is None:
             print(f"An error occurred updating the {args.table} table")
-            logger.failure(args.table, action, f"{args.table} table update failed")
+            logger.failure(table=args.table, action=action, message=f"{args.table} table update failed")
             exit_code = 1
         elif rows_affected == 0:
             print(f"{args.table} source is unchanged")
             logger.success(
-                args.table,
-                action,
-                f"{args.table} source is unchanged; no rows replaced",
-                0,
+                table=args.table,
+                action=action,
+                message=f"{args.table} source is unchanged; no rows replaced",
+                rows=0,
             )
         else:
             print(
@@ -138,14 +135,14 @@ def main() -> int:
                 f"Rows affected: {rows_affected}"
             )
             logger.success(
-                args.table,
-                action,
-                f"{args.table} table successfully updated; "
+                table=args.table,
+                action=action,
+                message=f"{args.table} table successfully updated; "
                 f"{rows_affected} rows affected",
-                rows_affected,
+                rows=rows_affected,
             )
     except Exception as exc:  # noqa: BLE001
-        logger.critical(args.table, action, f"{args.table} update crashed: {exc}")
+        logger.critical(table=args.table, action=action, message=f"{args.table} update crashed: {exc}")
         print(f"{args.table} update crashed: {exc}")
         exit_code = 1
     finally:

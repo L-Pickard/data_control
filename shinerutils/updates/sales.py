@@ -69,9 +69,9 @@ def update_sales_table(
 
     except Exception as e:  # noqa: BLE001
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            f"an error occurred. Error: {e}",
+            table="sales",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -103,9 +103,9 @@ def update_sales_table(
 
         except Exception as e:  # noqa: BLE001
             logger.error(  # noqa: PLE1205
-                "sales",
-                action,
-                f"an error occurred. Error: {e}",
+                table="sales",
+                action=action,
+                message=f"an error occurred. Error: {e}",
             )
 
             return None
@@ -113,17 +113,17 @@ def update_sales_table(
     if err_sql02 is not None:
         action = "Execute sql02 sales query and return results as a dataframe."
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            err_sql02,
+            table="sales",
+            action=action,
+            message=err_sql02,
         )
 
     if err_sql04 is not None:
         action = "Execute sql04 sales query and return results as a dataframe."
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            err_sql04,
+            table="sales",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql02 is not None or err_sql04 is not None:
@@ -145,9 +145,9 @@ def update_sales_table(
 
     except Exception as e:  # noqa: BLE001
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            f"an error occurred. Error: {e}",
+            table="sales",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -161,10 +161,10 @@ def update_sales_table(
         action = "sales dataframe row length check"
 
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="sales",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -182,9 +182,9 @@ def update_sales_table(
         )
     except Exception as e:  # noqa: BLE001
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            f"an error has occurred: Error {e}",
+            table="sales",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None
@@ -198,9 +198,9 @@ def update_sales_table(
 
     if err is not None:
         logger.error(  # noqa: PLE1205
-            "sales",
-            action,
-            f"an error has occurred: Error {err}",
+            table="sales",
+            action=action,
+            message=f"an error has occurred: Error {err}",
         )
 
         return None

@@ -52,13 +52,13 @@ def update_sales_orders_table(
             df_nav, nav_error = future_nav.result()
             df_llc, llc_error = future_llc.result()
         except Exception as exc:  # noqa: BLE001
-            logger.error(TABLE, "load sales-order sources", str(exc))
+            logger.error(table=TABLE, action="load sales-order sources", message=str(exc))
             return None
 
     if nav_error is not None:
-        logger.error(TABLE, "execute NAV sales-order query", nav_error)
+        logger.error(table=TABLE, action="execute NAV sales-order query", message=nav_error)
     if llc_error is not None:
-        logger.error(TABLE, "execute LLC sales-order query", llc_error)
+        logger.error(table=TABLE, action="execute LLC sales-order query", message=llc_error)
     if nav_error is not None or llc_error is not None:
         return None
 
@@ -91,5 +91,5 @@ def update_sales_orders_table(
                 )
         except Exception:  # noqa: BLE001
             pass
-        logger.error(TABLE, "validate and replace sales-order data", str(exc))
+        logger.error(table=TABLE, action="validate and replace sales-order data", message=str(exc))
         return None

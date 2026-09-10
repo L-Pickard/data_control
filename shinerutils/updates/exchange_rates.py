@@ -36,11 +36,11 @@ def update_exchange_rates_table(
         df_sql02, err_sql02 = future_sql02.result()
         df_sql04, err_sql04 = future_sql04.result()
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "exchange_rates",
-            action,
-            f"an error occurred. Error: {e}",
+            table="exchange_rates",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -48,17 +48,17 @@ def update_exchange_rates_table(
     if err_sql02 is not None:
         action = "read in and execute sql02 exchange_rates query and return results as a dataframe."
         logger.error(
-            "exchange_rates",
-            action,
-            err_sql02,
+            table="exchange_rates",
+            action=action,
+            message=err_sql02,
         )
 
     if err_sql04 is not None:
         action = "read in and execute sql04 exchange_rates query and return results as a dataframe."
         logger.error(
-            "exchange_rates",
-            action,
-            err_sql04,
+            table="exchange_rates",
+            action=action,
+            message=err_sql04,
         )
 
     if err_sql02 is not None or err_sql04 is not None:
@@ -75,11 +75,11 @@ def update_exchange_rates_table(
     try:
         df = concat([df_sql02, df_sql04], ignore_index=True)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "exchange_rates",
-            action,
-            f"an error occurred. Error: {e}",
+            table="exchange_rates",
+            action=action,
+            message=f"an error occurred. Error: {e}",
         )
 
         return None
@@ -90,10 +90,10 @@ def update_exchange_rates_table(
         action = "exchange_rates dataframe row length check"
 
         logger.error(
-            "exchange_rates",
-            action,
-            "the dataframe has no rows of data",
-            0,
+            table="exchange_rates",
+            action=action,
+            message="the dataframe has no rows of data",
+            rows=0,
         )
 
         return None
@@ -120,11 +120,11 @@ def update_exchange_rates_table(
         if err is not None:
             raise RuntimeError(err)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(
-            "exchange_rates",
-            action,
-            f"an error has occurred. Error {e}",
+            table="exchange_rates",
+            action=action,
+            message=f"an error has occurred. Error {e}",
         )
 
         return None
@@ -141,9 +141,9 @@ def update_exchange_rates_table(
         )
     except Exception as e:  # noqa: BLE001
         logger.error(
-            "exchange_rates",
-            action,
-            f"an error has occurred: Error {e}",
+            table="exchange_rates",
+            action=action,
+            message=f"an error has occurred: Error {e}",
         )
 
         return None

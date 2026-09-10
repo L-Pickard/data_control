@@ -128,13 +128,13 @@ def update_record_link_table(
             df_sql02, error_sql02 = future_sql02.result()
             df_sql04, error_sql04 = future_sql04.result()
         except Exception as exc:  # noqa: BLE001
-            logger.error(TABLE, "load record-link sources", str(exc))
+            logger.error(table=TABLE, action="load record-link sources", message=str(exc))
             return None
 
     if error_sql02 is not None:
-        logger.error(TABLE, "read sql02 record links", error_sql02)
+        logger.error(table=TABLE, action="read sql02 record links", message=error_sql02)
     if error_sql04 is not None:
-        logger.error(TABLE, "read sql04 record links", error_sql04)
+        logger.error(table=TABLE, action="read sql04 record links", message=error_sql04)
     if error_sql02 is not None or error_sql04 is not None:
         return None
 
@@ -145,7 +145,7 @@ def update_record_link_table(
         df = concat([df_sql02, df_sql04], ignore_index=True)
         df = _validate_record_links(df, _valid_entities(engine_sql18))
     except Exception as exc:  # noqa: BLE001
-        logger.error(TABLE, "validate record links", str(exc))
+        logger.error(table=TABLE, action="validate record links", message=str(exc))
         return None
 
     rows = len(df)
@@ -181,7 +181,7 @@ def update_record_link_table(
                 )
         except Exception:  # noqa: BLE001
             pass
-        logger.error(TABLE, "replace record links", str(exc))
+        logger.error(table=TABLE, action="replace record links", message=str(exc))
         return None
 
     return rows

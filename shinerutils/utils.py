@@ -89,15 +89,15 @@ def concurrent_df_load(engine: Engine, query_path: Path, logger: DatabaseLogger,
 
         query = query_path.read_text(encoding="utf-8")
 
-        logger.info(
-            after_first_space(source_name),
-            "read file successfully",
-            action,
-        )
-
-    except Exception as e:
+    except (OSError, UnicodeError) as e:
         err = f"error reading query file for {source_name}. ERROR: {e}"
         return None, err
+
+    logger.info(
+        table=after_first_space(source_name),
+        action="read file successfully",
+        message=action,
+    )
 
     action = f"execute {source_name} query against db"
 
@@ -112,9 +112,9 @@ def concurrent_df_load(engine: Engine, query_path: Path, logger: DatabaseLogger,
         return None, err
     
     logger.info(
-        after_first_space(source_name),
-        "query has sucessfully been executed and dataframe has been",
-        action,
+        table=after_first_space(source_name),
+        action="query has sucessfully been executed and dataframe has been",
+        message=action,
     )
 
     return df, None
@@ -133,15 +133,15 @@ def concurrent_df_load_params(
 
         query = query_path.read_text(encoding="utf-8")
 
-        logger.info(
-            after_first_space(source_name),
-            "read file successfully",
-            action,
-        )
-
-    except Exception as e:
+    except (OSError, UnicodeError) as e:
         err = f"error reading query file for {source_name}. ERROR: {e}"
         return None, err
+
+    logger.info(
+        table=after_first_space(source_name),
+        action="read file successfully",
+        message=action,
+    )
 
     action = f"execute {source_name} query against db with params"
 
@@ -156,9 +156,9 @@ def concurrent_df_load_params(
         return None, err
 
     logger.info(
-        after_first_space(source_name),
-        "query has sucessfully been executed and dataframe has been",
-        action,
+        table=after_first_space(source_name),
+        action="query has sucessfully been executed and dataframe has been",
+        message=action,
     )
 
     return df, None
