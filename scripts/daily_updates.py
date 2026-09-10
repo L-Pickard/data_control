@@ -35,7 +35,6 @@ def main() -> None:
     engine_sql02 = get_sqlalchemy_engine("shinersql18", "NAV_LIVE")
     engine_sql04 = get_sqlalchemy_engine("shinersql04", "BC_LIVE_USA")
     engine_sql05 = get_sqlalchemy_engine("shinersql05", "BC_UAT_UK")
-    engine_finance = get_sqlalchemy_engine("shinersql18", "Finance")
     engine_sql18 = get_sqlalchemy_engine("shinersql18", "data_control")
 
     try:
@@ -464,7 +463,7 @@ def main() -> None:
             action="run daily updates",
             message=f"daily update run crashed. Error: {e}",
         )
-        
+
         raise
 
     finally:
@@ -476,7 +475,6 @@ def main() -> None:
         engine_sql02.dispose()
         engine_sql04.dispose()
         engine_sql05.dispose()
-        engine_finance.dispose()
         engine_sql18.dispose()
 
 
