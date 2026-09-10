@@ -17,6 +17,10 @@ CREATE TABLE [dbo].[sales_orders] (
 	,[posting_date_key] AS [dbo].[fnc_date_key]([posting_date]) PERSISTED
 	,[shipment_date_key] AS [dbo].[fnc_date_key]([shipment_date]) PERSISTED
 	,[entity] NVARCHAR(20) NOT NULL
+	-- Finance orderbook rules use the sell-to customer.
+	-- Non-persisted flags also reflect subsequent dbo.exclusions changes.
+	,[exclusion] AS [dbo].[fnc_is_customer_exclusion]([entity], [sell_to_customer_id])
+	,[intercompany] AS [dbo].[fnc_is_customer_intercompany]([entity], [sell_to_customer_id])
 	,[document_type] INTEGER NOT NULL
 	,[document_no] NVARCHAR(20) NOT NULL
 	,[line_no] INTEGER NOT NULL

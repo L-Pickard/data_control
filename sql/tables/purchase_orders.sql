@@ -17,6 +17,9 @@ DROP TABLE IF EXISTS [dbo].[purchase_orders];
 
 CREATE TABLE [dbo].[purchase_orders] (
 	 [entity] NVARCHAR(20) NOT NULL
+	-- Keep flags current when dbo.exclusions changes; loaders omit computed columns.
+	,[exclusion] AS [dbo].[fnc_is_vendor_exclusion]([entity], [vendor_id])
+	,[intercompany] AS [dbo].[fnc_is_vendor_intercompany]([entity], [vendor_id])
 	,[document_type] INTEGER NOT NULL
 	,[document_type_name] NVARCHAR(20) NOT NULL
 	,[document_no] NVARCHAR(20) NOT NULL

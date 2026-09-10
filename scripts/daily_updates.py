@@ -7,26 +7,24 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 def main() -> None:
-    from shinerutils.logging import DatabaseLogger
     from shinerutils import (
         get_sqlalchemy_engine,
         update_brands_table,
         update_countries_table,
         update_customers_table,
         update_exchange_rates_table,
+        update_inventory_table,
         update_item_images_table,
         update_item_packaging_table,
-        update_inventory_table,
         update_items_table,
-        update_monthly_average_exchange_rates_table,
-        update_preorders_table,
         update_purchase_orders_table,
         update_record_link_table,
-        update_sales_people_table,
         update_sales_orders_table,
+        update_sales_people_table,
         update_sales_table,
         update_vendors_table,
     )
+    from shinerutils.logging import DatabaseLogger
 
     # initialize new instance of logger class
 
@@ -50,6 +48,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[sales_people] table"
 
         if rows_affected is None:
+
             print("An error occurred updating sales_people table")
 
             logger.failure(
@@ -80,6 +79,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[countries] table"
 
         if rows_affected is None:
+
             print("An error occurred updating countries table")
 
             logger.failure(
@@ -110,6 +110,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[customers] table"
 
         if rows_affected is None:
+
             print("An error occurred updating customers table")
 
             logger.failure(
@@ -140,7 +141,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[vendors] table"
 
         if rows_affected is None:
+
             print("An error occurred updating vendors table")
+
             logger.failure(
                 table="vendors",
                 action=action,
@@ -166,6 +169,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[brands] table"
 
         if rows_affected is None:
+
             print("An error occurred updating brands table")
 
             logger.failure(
@@ -196,6 +200,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[items] table"
 
         if rows_affected is None:
+
             print("An error occurred updating items table")
 
             logger.failure(
@@ -226,8 +231,14 @@ def main() -> None:
         action = "update [data_control].[dbo].[inventory] table"
 
         if rows_affected is None:
+
             print("An error occurred updating inventory table")
-            logger.failure(table="inventory", action=action, message="inventory table update has failed")
+
+            logger.failure(
+                table="inventory",
+                action=action,
+                message="inventory table update has failed",
+            )
         else:
             print(
                 "inventory table has been successfully updated, rows affected: ",
@@ -251,7 +262,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[record_link] table"
 
         if rows_affected is None:
+
             print("An error occurred updating record_link table")
+
             logger.failure(
                 table="record_link",
                 action=action,
@@ -277,7 +290,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[item_images] tables"
 
         if rows_affected is None:
+
             print("An error occurred updating item image tables")
+
             logger.failure(
                 table="item_images",
                 action=action,
@@ -298,13 +313,22 @@ def main() -> None:
             )
 
         rows_affected = update_item_packaging_table(engine_sql18, logger)
+
         action = "update [data_control].[dbo].[item_packaging] table"
 
         if rows_affected is None:
+
             print("An error occurred updating item_packaging table")
-            logger.failure(table="item_packaging", action=action, message="item_packaging table update failed")
+
+            logger.failure(
+                table="item_packaging",
+                action=action,
+                message="item_packaging table update failed",
+            )
         else:
-            print(f"item_packaging table successfully updated, rows affected: {rows_affected}")
+            print(
+                f"item_packaging table successfully updated, rows affected: {rows_affected}"
+            )
             logger.success(
                 table="item_packaging",
                 action=action,
@@ -321,6 +345,7 @@ def main() -> None:
         action = "update [data_control].[dbo].[exchange_rates] table"
 
         if rows_affected is None:
+
             print("An error occurred updating exchange_rates table")
 
             logger.failure(
@@ -342,67 +367,6 @@ def main() -> None:
                 rows=rows_affected,
             )
 
-        # Refresh forecast exchange rates and flag forecasts when rates change.
-
-        rows_affected = update_monthly_average_exchange_rates_table(
-            engine_finance, engine_sql18, logger
-        )
-
-        action = "update [data_control].[dbo].[monthly_avg_xr] table"
-
-        if rows_affected is None:
-            print("An error occurred updating monthly_avg_xr table")
-            logger.failure(
-                table="monthly_avg_xr",
-                action=action,
-                message="monthly_avg_xr table update has failed",
-            )
-        elif rows_affected == 0:
-            print("monthly_avg_xr source is unchanged")
-            logger.success(
-                table="monthly_avg_xr",
-                action=action,
-                message="monthly_avg_xr source is unchanged; no rows were replaced",
-                rows=0,
-            )
-        else:
-            print(
-                "monthly_avg_xr table successfully updated, rows affected: ",
-                rows_affected,
-            )
-            logger.success(
-                table="monthly_avg_xr",
-                action=action,
-                message=f"monthly_avg_xr successfully updated; {rows_affected} rows inserted",
-                rows=rows_affected,
-            )
-
-        # Update preorders after the brand and country dimensions.
-
-        rows_affected = update_preorders_table(engine_finance, engine_sql18, logger)
-
-        action = "update [data_control].[dbo].[preorders] table"
-
-        if rows_affected is None:
-            print("An error occurred updating preorders table")
-            logger.failure(
-                table="preorders",
-                action=action,
-                message="preorders table update has failed",
-            )
-        else:
-            print(
-                "preorders table successfully updated, source rows processed: ",
-                rows_affected,
-            )
-            logger.success(
-                table="preorders",
-                action=action,
-                message=f"preorders successfully updated; "
-                f"{rows_affected} source rows processed",
-                rows=rows_affected,
-            )
-
         # Update purchase orders after the vendor and item dimensions.
 
         rows_affected = update_purchase_orders_table(
@@ -412,7 +376,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[purchase_orders] table"
 
         if rows_affected is None:
+
             print("An error occurred updating purchase_orders table")
+
             logger.failure(
                 table="purchase_orders",
                 action=action,
@@ -440,7 +406,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[sales_orders] table"
 
         if rows_affected is None:
+
             print("An error occurred updating sales_orders table")
+
             logger.failure(
                 table="sales_orders",
                 action=action,
@@ -468,7 +436,9 @@ def main() -> None:
         action = "update [data_control].[dbo].[sales] table"
 
         if rows_affected is None:
+
             print("An error occurred updating sales table")
+
             logger.failure(
                 table="sales",
                 action=action,
@@ -487,12 +457,14 @@ def main() -> None:
                 rows=rows_affected,
             )
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
+
         logger.critical(
             table=None,
             action="run daily updates",
             message=f"daily update run crashed. Error: {e}",
         )
+        
         raise
 
     finally:
