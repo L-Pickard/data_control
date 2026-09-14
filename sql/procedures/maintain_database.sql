@@ -46,7 +46,7 @@ BEGIN
     SELECT t.object_id, t.name FROM sys.tables t
     WHERE t.schema_id = SCHEMA_ID(N'dbo') AND t.is_ms_shipped = 0
       AND t.is_memory_optimized = 0 AND t.temporal_type = 0
-      AND t.name NOT IN (N'database_maintenance_log',N'database_maintenance_schedule') AND t.name NOT LIKE N'%[_]staging'
+      AND t.name NOT IN (N'db_log') AND t.name NOT LIKE N'%[_]staging'
       AND NOT EXISTS (SELECT 1 FROM sys.indexes i WHERE i.object_id=t.object_id AND i.index_id=1 AND i.is_disabled=1)
       AND (@TablesJson IS NULL OR t.name IN (SELECT value FROM OPENJSON(@TablesJson)));
     IF @TablesJson IS NOT NULL AND EXISTS (
@@ -100,7 +100,7 @@ BEGIN
     DECLARE @run UNIQUEIDENTIFIER=NEWID(), @started DATETIME2=SYSUTCDATETIME(),
         @lock_result INT, @id INT=0,
         @command NVARCHAR(MAX), @log_id BIGINT, @action VARCHAR(20),
-        @object INT, @target INT, @error NVARCHAR(2048);
+        @object INT, @target INT, @error NVARCHAR(2048), @action_started DATETIME2(7);
     EXEC @lock_result=sys.sp_getapplock @Resource=N'dbo.maintain_database',
         @LockMode='Exclusive',@LockOwner='Session',@LockTimeout=0;
     IF @lock_result<0 THROW 51006, 'Another maintenance run is active.', 1;
@@ -122,20 +122,36 @@ BEGIN
                 UPDATE #work SET status='ALREADY_CURRENT' WHERE id=@id;
                 CONTINUE;
             END;
-            INSERT dbo.database_maintenance_log
-                (run_id,mode,action,schema_name,table_name,target_name,command,page_count,
-                 fragmentation_before,density_before,modifications_before,status)
-            SELECT @run,@Mode,action,N'dbo',table_name,target_name,command,page_count,
-                fragmentation,density,modifications,'RUNNING' FROM #work WHERE id=@id;
+            SET @action_started=SYSUTCDATETIME();
+            INSERT dbo.db_log ([timestamp],duration_seconds,[level],[table],[action],[message])
+            SELECT SYSDATETIME(),0,N'INFO',LEFT(table_name,30),N'database maintenance: '+action,
+                (SELECT @run AS run_id,@Mode AS mode,N'dbo' AS schema_name,
+                    table_name,target_name,command,page_count,
+                    fragmentation AS fragmentation_before,density AS density_before,
+                    modifications AS modifications_before,@action_started AS started_at_utc,
+                    N'RUNNING' AS status
+                 FOR JSON PATH,WITHOUT_ARRAY_WRAPPER)
+            FROM #work WHERE id=@id;
             SET @log_id=SCOPE_IDENTITY();
             BEGIN TRY
                 EXEC sys.sp_executesql @command;
-                UPDATE dbo.database_maintenance_log SET status='SUCCESS',finished_at=SYSUTCDATETIME() WHERE log_id=@log_id;
+                UPDATE dbo.db_log
+                SET [level]=N'SUCCESS',
+                    duration_seconds=DATEDIFF_BIG(MICROSECOND,@action_started,SYSUTCDATETIME())/1000000.0,
+                    [message]=JSON_MODIFY(JSON_MODIFY([message],'$.status',N'SUCCESS'),
+                        '$.finished_at_utc',CONVERT(NVARCHAR(33),SYSUTCDATETIME(),126))
+                WHERE log_id=@log_id;
                 UPDATE #work SET status='SUCCESS' WHERE id=@id;
             END TRY
             BEGIN CATCH
                 SET @error=ERROR_MESSAGE();
-                UPDATE dbo.database_maintenance_log SET status='FAILED',finished_at=SYSUTCDATETIME(),error_message=@error WHERE log_id=@log_id;
+                UPDATE dbo.db_log
+                SET [level]=N'FAILURE',
+                    duration_seconds=DATEDIFF_BIG(MICROSECOND,@action_started,SYSUTCDATETIME())/1000000.0,
+                    [message]=JSON_MODIFY(JSON_MODIFY(JSON_MODIFY([message],'$.status',N'FAILED'),
+                        '$.finished_at_utc',CONVERT(NVARCHAR(33),SYSUTCDATETIME(),126)),
+                        '$.error_message',@error)
+                WHERE log_id=@log_id;
                 THROW;
             END CATCH;
         END;
@@ -147,6 +163,6 @@ BEGIN
     END CATCH;
     SELECT @run AS run_id,status,COUNT(*) AS actions FROM #work GROUP BY status;
     IF EXISTS (SELECT 1 FROM #work WHERE status='TIME_LIMIT')
-        THROW 51007, 'Maintenance time limit reached; some actions were deferred. See completed actions in database_maintenance_log.', 1;
+        THROW 51007, 'Maintenance time limit reached; some actions were deferred. See completed actions in db_log.', 1;
 END;
 GO

@@ -487,7 +487,7 @@ def main() -> None:
         else:
 
             successful_tables.extend(["sales"])
-            
+
             print(
                 "sales table has been successfully updated, rows affected: ",
                 rows_affected,
@@ -513,7 +513,9 @@ def main() -> None:
         raise
 
     finally:
+
         # write log records to db or file if not able to connect to db
+        
         err = logger.flush_log_records(engine_sql18)
         if err is not None:
             print(err)

@@ -20,9 +20,9 @@ Author:   Leo Pickard
 Version:  1.0
 Date:     12/08/2026
 =================================================================================================================================================
-Deletes sales rows whose posting date is greater than or equal to the caller-supplied date, then resets the sales increment date for every entity
-to the preceding day. The sales extracts use a strict greater-than comparison, so this ensures the cutoff date is reloaded. Returns affected-row
-counts for job logging.
+Deletes sales rows whose posting date is greater than or equal to the caller-supplied date, then sets each entity's sales increment to its
+maximum remaining sales posting date. Entities with no remaining sales keep the earlier of their existing increment and the preceding day.
+The sales extracts use a strict greater-than comparison. Returns affected-row counts for job logging.
 ================================================================================================================================================*/
 BEGIN
 	SET NOCOUNT ON;
@@ -52,14 +52,29 @@ BEGIN
 
 		SET @sales_rows_deleted = @@ROWCOUNT;
 
-		UPDATE [dbo].[entities]
-		SET [sales_increment] = DATEADD(DAY, -1, @from_date);
+		;WITH remaining_sales AS (
+			SELECT [entity], MAX([posting_date]) AS [max_posting_date]
+			FROM [dbo].[sales]
+			GROUP BY [entity]
+		)
+		UPDATE en
+		SET [sales_increment] = target.[sales_increment]
+		FROM [dbo].[entities] AS en
+		LEFT JOIN remaining_sales AS remaining ON remaining.[entity] = en.[entity]
+		CROSS APPLY (
+			SELECT COALESCE(remaining.[max_posting_date],
+				CASE WHEN en.[sales_increment] < DATEADD(DAY, -1, @from_date)
+					THEN en.[sales_increment] ELSE DATEADD(DAY, -1, @from_date) END
+			) AS [sales_increment]
+		) AS target
+		WHERE en.[sales_increment] <> target.[sales_increment];
 
 		SET @entities_updated = @@ROWCOUNT;
 		SET @duration_seconds = CAST(DATEDIFF_BIG(MICROSECOND, @started_at, SYSDATETIME()) / 1000000.0 AS DECIMAL(38, 20));
 		SET @log_message = CONCAT(
 			 N'Successfully deleted ', @sales_rows_deleted, N' sales rows from ', CONVERT(NVARCHAR(10), @from_date, 23),
-			 N' and reset ', @entities_updated, N' entity sales increment dates to ',
+			 N' and recalculated ', @entities_updated, N' entity sales increment dates from their maximum remaining sales posting dates.',
+			 N' Entities with no remaining sales used the earlier of their existing increment and ',
 			 CONVERT(NVARCHAR(10), DATEADD(DAY, -1, @from_date), 23), N'.'
 			);
 

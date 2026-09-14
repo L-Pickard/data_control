@@ -16,6 +16,7 @@ IF EXISTS [dbo].[item_packaging]
 	CREATE TABLE [dbo].[item_packaging] (
 		 [item_id] NVARCHAR(30) NOT NULL
 		,[brand_id] AS CAST(LEFT([item_id], 3) AS NVARCHAR(20)) PERSISTED
+		,[brand_type] NVARCHAR(100) NULL
 		,[category] NVARCHAR(200) NOT NULL
 		,[article_type] NVARCHAR(200) NOT NULL
 		,[instance] INTEGER NOT NULL

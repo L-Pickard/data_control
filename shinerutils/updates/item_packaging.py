@@ -135,6 +135,10 @@ def _packaging_recycled_flag(value: Any) -> bool:
 
 def transform_item_packaging_dataframe(source: DataFrame) -> DataFrame:
 
+    brand_type_column = "Own Brand, Licensee or Distributer"
+    if brand_type_column not in source.columns:
+        raise ValueError(f"Missing required packaging column: {brand_type_column!r}")
+
     definitions = (
         ("Primary Paper/Cardboard", 7, True, "Primary Packaging Per Item"),
         ("Plastic", 6, True, "Primary Packaging Per Item"),
@@ -157,6 +161,7 @@ def transform_item_packaging_dataframe(source: DataFrame) -> DataFrame:
 
     result_columns = [
         "SKU",
+        brand_type_column,
         "Category",
         "Article Type",
         "Instance",
@@ -186,9 +191,9 @@ def transform_item_packaging_dataframe(source: DataFrame) -> DataFrame:
             # reindex supplies nulls for absent fields, like MissingField.UseNull.
 
             component = source.reindex(
-                columns=["SKU", "Average Carton Qty", *source_columns]
+                columns=["SKU", "Average Carton Qty", brand_type_column, *source_columns]
             ).copy()
-            component.columns = ["SKU", "Average Carton Qty", *selected_fields]
+            component.columns = ["SKU", "Average Carton Qty", brand_type_column, *selected_fields]
             if not recycled:
                 component["Recycled Content?"] = None
                 component["% of Recycled Content"] = None
@@ -220,6 +225,7 @@ def transform_item_packaging_dataframe(source: DataFrame) -> DataFrame:
     result = result.reindex(columns=result_columns).rename(
         columns={
             "SKU": "item_id",
+            brand_type_column: "brand_type",
             "Category": "category",
             "Article Type": "article_type",
             "Instance": "instance",

@@ -31,7 +31,7 @@ def maintain_loaded_tables(
         logger.success(
             action="database maintenance",
             message="Statistics maintenance and the scheduled index check completed. "
-            "See dbo.database_maintenance_log for individual actions.",
+            "See dbo.db_log for individual actions.",
         )
     except Exception as exc:
         logger.failure(action="database maintenance", message=str(exc))
