@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import date, timedelta
 
 from pandas import DataFrame, read_csv, to_datetime
 from sqlalchemy.dialects.mssql import DATE, INTEGER, NCHAR, NVARCHAR, SMALLINT, TINYINT
@@ -130,6 +131,41 @@ def prepare_dates_dataframe(path: Path = CSV_PATH) -> DataFrame:
         & (to_datetime(frame["calendar_date"]) <= to_datetime(frame["financial_year_end"]))
     ).all():
         raise ValueError("a date falls outside its stated financial year")
+
+    # From FY 2026/27, May includes 30 April; FY 2025/26 is the short
+    # transition year. Preserve the historical 1 May start before that.
+    for row in frame.itertuples(index=False):
+        day = row.calendar_date
+        label_day = day + timedelta(days=1) if day.year >= 2026 and (day.month, day.day) == (4, 30) else day
+        start_year = label_day.year - (label_day.month < 5)
+        month_no = (label_day.month + 7) % 12 + 1
+        quarter_no = (month_no - 1) // 3 + 1
+        month_start = date(label_day.year, label_day.month, 1)
+        next_month = (month_start + timedelta(days=32)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
+        year_start = date(start_year, 4, 30) if start_year >= 2026 else date(start_year, 5, 1)
+        year_end = date(start_year + 1, 4, 29 if start_year >= 2025 else 30)
+        if label_day.month == 5 and start_year >= 2026:
+            month_start -= timedelta(days=1)
+        if label_day.month == 4 and label_day.year >= 2026:
+            month_end -= timedelta(days=1)
+        quarter_start = [year_start, date(start_year, 8, 1),
+                         date(start_year, 11, 1), date(start_year + 1, 2, 1)][quarter_no - 1]
+        quarter_end = [date(start_year, 7, 31), date(start_year, 10, 31),
+                       date(start_year + 1, 1, 31), year_end][quarter_no - 1]
+        expected_periods = {
+            "financial_year_start": year_start,
+            "financial_year_end": year_end,
+            "financial_month_start": month_start,
+            "financial_month_end": month_end,
+            "financial_quarter_start": quarter_start,
+            "financial_quarter_end": quarter_end,
+            "financial_month_no": month_no,
+            "financial_quarter": quarter_no,
+        }
+        for column, expected_value in expected_periods.items():
+            if getattr(row, column) != expected_value:
+                raise ValueError(f"incorrect {column} for {day}: expected {expected_value}")
 
     return frame
 

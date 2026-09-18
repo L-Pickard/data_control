@@ -86,6 +86,25 @@ INCLUDE (
 	,[usd_adjusted_margin]
 	);
 
+-- Supports same-calendar-date previous-year sales and adjusted margin cards.
+
+CREATE NONCLUSTERED INDEX [IX_sales_card_date_key_ny_entity]
+ON [dbo].[sales] (
+	 [date_key_ny]
+	,[entity]
+	)
+INCLUDE (
+	 [brand_id]
+	,[country_id]
+	,[sales_type]
+	,[gbp_sales]
+	,[eur_sales]
+	,[usd_sales]
+	,[gbp_adjusted_margin]
+	,[eur_adjusted_margin]
+	,[usd_adjusted_margin]
+	);
+
 -- Supports the target/reset side of update_adjusted_margin without indexing
 -- entities or document types that the procedure never updates.
 

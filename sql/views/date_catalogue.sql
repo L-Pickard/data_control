@@ -31,7 +31,8 @@ WITH current_period AS (
 	LEFT JOIN [dbo].[dates] AS previous_year
 		ON previous_year.[calendar_date] = DATEADD(DAY, -1, today.[financial_year_start])
 	LEFT JOIN [dbo].[dates] AS rolling_start
-		ON rolling_start.[calendar_date] = DATEADD(MONTH, -11, today.[calendar_date])
+		-- Anchor on the financial month's end: 30 April belongs to May.
+		ON rolling_start.[calendar_date] = DATEADD(MONTH, -11, today.[financial_month_end])
 	WHERE today.[calendar_date] = CONVERT(DATE, SYSDATETIME())
 )
 SELECT dates.*

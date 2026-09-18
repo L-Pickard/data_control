@@ -7,9 +7,9 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from shinerutils.maintenance import maintain_loaded_tables
-from scripts import daily_updates
 import shinerutils
+from scripts import daily_updates
+from shinerutils.maintenance import maintain_loaded_tables
 
 
 class MaintenanceTests(unittest.TestCase):
