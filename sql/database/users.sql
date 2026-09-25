@@ -26,8 +26,11 @@ IF NOT EXISTS (
         WHERE name = N'shiner_reports'
         )
 BEGIN
-    CREATE LOGIN [shiner_reports]
-        WITH PASSWORD = 'Radlands2025!';
+    -- No password is stored in source control: create with a random, unknown password, then set the real one with
+    -- tools/reset-shiner-reports-password.ps1 (prompted or -Generate; never printed or written to disk).
+    DECLARE @initial NVARCHAR(128) = CONVERT(NVARCHAR(36), NEWID()) + N'Aa1!' + CONVERT(NVARCHAR(36), NEWID());
+    DECLARE @create NVARCHAR(MAX) = N'CREATE LOGIN [shiner_reports] WITH PASSWORD = ' + QUOTENAME(@initial, N'''') + N';';
+    EXEC sys.sp_executesql @create;
 
     PRINT 'Login shiner_reports created.';
 END
