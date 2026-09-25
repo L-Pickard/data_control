@@ -69,3 +69,10 @@ as production-critical.
 - For DDL/DML against `data_control`, explain the intended change before running it.
 - Never run destructive SQL such as `DROP`, `TRUNCATE`, or broad `DELETE` unless the user explicitly requests it or the SQL file being deployed is already understood to recreate that object.
 - When using `sqlcmd`, prefer `-b` so failures stop the command and are visible.
+
+## Portal schema
+
+- `[portal]` holds the Shiner web portal's own data (people by Windows SID, app-managed groups, report grants, audit). It was created on 25 September 2026 by `sql/migrations/20260925_create_portal_schema.sql`; table files are `sql/tables/portal_*.sql` and never drop (they hold access rights).
+- Schema ownership changes and GRANTs need a `db_owner` Windows login; the `codex_assistant` helper (db_ddladmin) cannot do them. Ask the user to run such scripts with `sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i <file>`.
+- `shiner_reports` is the portal's runtime SQL login: SELECT on the warehouse objects it reads, SELECT/INSERT/UPDATE/DELETE on `[portal]` (`sql/database/grants_shiner_reports_portal.sql`). Its password is never stored in this repo; reset it with `tools/reset-shiner-reports-password.ps1`.
+

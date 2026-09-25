@@ -3,6 +3,9 @@
 -- report grants and the permission audit trail. The table DDL below is a snapshot of sql/tables/portal_*.sql.
 -- Adds new objects only: no existing object or data is changed or dropped. Finance is not touched.
 -- Stops without changes if [portal] already exists. Any error rolls everything back.
+-- Run as a db_owner Windows login (making [dbo] the schema owner needs more than the codex_assistant helper has):
+--   sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i sql/migrations/20260925_create_portal_schema.sql
+-- Applied 25 September 2026.
 USE [data_control];
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;

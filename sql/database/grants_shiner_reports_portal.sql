@@ -1,5 +1,7 @@
 -- Least-privilege access for [shiner_reports] as the Shiner web portal's runtime SQL login.
 -- Run after sql/migrations/20260925_create_portal_schema.sql. Safe to run again (GRANT is idempotent).
+-- Run as a db_owner Windows login (the codex_assistant helper cannot grant), e.g.:
+--   sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i sql/database/grants_shiner_reports_portal.sql
 -- Reads only the warehouse objects the portal's report and slicer SQL uses; reads and writes only [portal].
 USE [data_control];
 
@@ -36,7 +38,12 @@ GO
 -- remove it with:
 --   REVOKE EXECUTE TO [shiner_reports];
 
-SELECT dp.[permission_name], dp.[class_desc], COALESCE(OBJECT_SCHEMA_NAME(dp.[major_id]) + N'.' + OBJECT_NAME(dp.[major_id]), SCHEMA_NAME(dp.[major_id])) AS [securable]
+SELECT dp.[permission_name], dp.[class_desc]
+	,CASE dp.[class]
+		WHEN 0 THEN DB_NAME()
+		WHEN 1 THEN OBJECT_SCHEMA_NAME(dp.[major_id]) + N'.' + OBJECT_NAME(dp.[major_id])
+		WHEN 3 THEN SCHEMA_NAME(dp.[major_id])
+		END AS [securable]
 FROM sys.database_permissions AS dp
 WHERE dp.[grantee_principal_id] = USER_ID(N'shiner_reports') AND dp.[state] = 'G'
 ORDER BY [securable], dp.[permission_name];
