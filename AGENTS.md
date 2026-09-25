@@ -75,4 +75,5 @@ as production-critical.
 - `[portal]` holds the Shiner web portal's own data (people by Windows SID, app-managed groups, report grants, audit). It was created on 25 September 2026 by `sql/migrations/20260925_create_portal_schema.sql`; table files are `sql/tables/portal_*.sql` and never drop (they hold access rights).
 - Schema ownership changes and GRANTs need a `db_owner` Windows login; the `codex_assistant` helper (db_ddladmin) cannot do them. Ask the user to run such scripts with `sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i <file>`.
 - `shiner_reports` is the portal's runtime SQL login: SELECT on the warehouse objects it reads, SELECT/INSERT/UPDATE/DELETE on `[portal]` (`sql/database/grants_shiner_reports_portal.sql`). Its password is never stored in this repo; reset it with `tools/reset-shiner-reports-password.ps1`.
+- `[portal].[report_bookmarks]` (schema version 2, `sql/migrations/20260925_add_portal_report_bookmarks.sql`) holds each person's saved report views; the portal validates filter_json before saving. Record each portal migration in `[portal].[schema_versions]`.
 
