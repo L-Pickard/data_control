@@ -60,6 +60,8 @@ BEGIN
 		,[month_abbreviation_year] NCHAR(6) NULL
 		,[month_financial_year] NVARCHAR(9) NULL
 		,[financial_month_year_no] INTEGER NULL
+		-- Monday of the ISO week; placeholder attributes remain NULL.
+		,[iso_week_start] AS (CASE WHEN [is_placeholder] = 0 THEN DATEADD(DAY, -((DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), [calendar_date]) % 7 + 7) % 7), [calendar_date]) END)
 		,CONSTRAINT [PK_dates] PRIMARY KEY CLUSTERED ([date_key])
 		,CONSTRAINT [UQ_dates_calendar_date] UNIQUE ([calendar_date])
 		,CONSTRAINT [CK_dates_day_of_week]

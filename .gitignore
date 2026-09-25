@@ -89,6 +89,7 @@ Thumbs.db
 *~
 *.md
 !sql/database_maintenance.md
+!documents/sales_margin_bins.md
 # Local config files
 config.json
 AGENTS.md

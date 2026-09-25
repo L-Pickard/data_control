@@ -1,8 +1,20 @@
+-- Self-contained deployment; validates existing data and view column positions before commit.
 USE [data_control];
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET XACT_ABORT ON;
+SET LOCK_TIMEOUT 15000;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    IF COL_LENGTH('dbo.dates', 'iso_week_start') IS NOT NULL
+        THROW 51000, 'iso_week_start already exists; inspect before rerunning.', 1;
+    SELECT * INTO #dates_before FROM dbo.dates;
+    SELECT * INTO #catalogue_before FROM dbo.date_catalogue;
+    SELECT column_id, name INTO #catalogue_columns
+    FROM sys.columns WHERE object_id = OBJECT_ID('dbo.date_catalogue');
 
-GO
-
-CREATE OR ALTER VIEW [dbo].[date_catalogue]
+    ALTER TABLE dbo.dates ADD [iso_week_start] AS (CASE WHEN [is_placeholder] = 0 THEN DATEADD(DAY, -((DATEDIFF(DAY, CONVERT(DATE, '19000101', 112), [calendar_date]) % 7 + 7) % 7), [calendar_date]) END);
+    EXEC sys.sp_executesql N'CREATE OR ALTER VIEW [dbo].[date_catalogue]
 AS
 WITH current_period AS (
 	SELECT today.[calendar_date]
@@ -31,7 +43,7 @@ WITH current_period AS (
 	LEFT JOIN [dbo].[dates] AS previous_year
 		ON previous_year.[calendar_date] = DATEADD(DAY, -1, today.[financial_year_start])
 	LEFT JOIN [dbo].[dates] AS rolling_start
-		-- Anchor on the financial month's end: 30 April belongs to May.
+		-- Anchor on the financial month''s end: 30 April belongs to May.
 		ON rolling_start.[calendar_date] = DATEADD(MONTH, -11, today.[financial_month_end])
 	WHERE today.[calendar_date] = CONVERT(DATE, SYSDATETIME())
 )
@@ -129,6 +141,47 @@ SELECT dates.[date_key]
 	,dates.[iso_week_start]
 FROM [dbo].[dates] AS dates
 CROSS JOIN current_period
-WHERE dates.[is_placeholder] = 0;
+WHERE dates.[is_placeholder] = 0;';
 
-GO
+    EXEC sys.sp_executesql N'
+        IF EXISTS (
+            SELECT 1 FROM dbo.dates
+            WHERE (is_placeholder = 1 AND iso_week_start IS NOT NULL)
+               OR (is_placeholder = 0 AND (
+                   iso_week_start IS NULL
+                   OR iso_week_start <> DATEADD(DAY, -CONVERT(INT, day_of_week), calendar_date)
+                   OR DATEDIFF(DAY, iso_week_start, calendar_date) NOT BETWEEN 0 AND 6
+                   OR DATEPART(ISO_WEEK, iso_week_start) <> iso_week_no
+                   OR YEAR(DATEADD(DAY, 3, iso_week_start)) <> iso_year))
+        ) THROW 51000, ''ISO week start validation failed.'', 1;
+        IF EXISTS (
+            SELECT 1 FROM dbo.date_catalogue v JOIN dbo.dates d ON d.date_key = v.date_key
+            WHERE v.iso_week_start IS NULL OR v.iso_week_start <> d.iso_week_start
+        ) THROW 51000, ''Catalogue week start validation failed.'', 1;
+    ';
+    DECLARE @columns NVARCHAR(MAX), @sql NVARCHAR(MAX);
+    SELECT @columns = STRING_AGG(CONVERT(NVARCHAR(MAX), QUOTENAME(name)), ',') WITHIN GROUP (ORDER BY column_id)
+    FROM tempdb.sys.columns WHERE object_id = OBJECT_ID('tempdb..#dates_before');
+    SET @sql = N'IF EXISTS (SELECT ' + @columns + N' FROM dbo.dates EXCEPT SELECT * FROM #dates_before)
+        OR EXISTS (SELECT * FROM #dates_before EXCEPT SELECT ' + @columns + N' FROM dbo.dates)
+        THROW 51000, ''Existing date values changed.'', 1;';
+    EXEC sys.sp_executesql @sql;
+    SELECT @columns = STRING_AGG(CONVERT(NVARCHAR(MAX), QUOTENAME(name)), ',') WITHIN GROUP (ORDER BY column_id)
+    FROM #catalogue_columns;
+    SET @sql = N'IF EXISTS (SELECT ' + @columns + N' FROM dbo.date_catalogue EXCEPT SELECT * FROM #catalogue_before)
+        OR EXISTS (SELECT * FROM #catalogue_before EXCEPT SELECT ' + @columns + N' FROM dbo.date_catalogue)
+        THROW 51000, ''Existing catalogue values changed.'', 1;';
+    EXEC sys.sp_executesql @sql;
+    IF EXISTS (SELECT column_id, name FROM #catalogue_columns EXCEPT
+        SELECT column_id, name FROM sys.columns WHERE object_id = OBJECT_ID('dbo.date_catalogue'))
+        THROW 51000, 'Existing catalogue column positions changed.', 1;
+    IF (SELECT COUNT(*) FROM dbo.dates) <> (SELECT COUNT(*) FROM #dates_before)
+       OR (SELECT COUNT(*) FROM dbo.date_catalogue) <> (SELECT COUNT(*) FROM #catalogue_before)
+        THROW 51000, 'Row counts changed.', 1;
+    COMMIT TRANSACTION;
+    SELECT 'PASS: ISO week start deployed; existing values, row counts and view column positions preserved' AS result;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;

@@ -151,6 +151,8 @@ BEGIN TRY
 			);
 
 	-- Below we insert the new sales records from the staging table into the sales table.
+	-- margin_bin is a persisted computed column: omit it from the insert list.
+	-- SQL Server maintains it when the entity, sales or adjusted margin changes.
 
 	INSERT INTO [dbo].[sales] (
 		 [posting_date]

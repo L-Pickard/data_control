@@ -6,6 +6,11 @@ SET ANSI_NULLS ON
 
 GO
 
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
 SET QUOTED_IDENTIFIER ON
 
 GO
@@ -33,6 +38,81 @@ IF EXISTS [dbo].[sales];
         ,[brand_id]                     AS CAST(LEFT([item_id], 3) AS NVARCHAR(20)) PERSISTED
         ,[item_id]                      NVARCHAR(20) NOT NULL
         ,[quantity]                     DECIMAL(38, 20) NOT NULL
+        ,[margin_bin] AS (CASE [entity]
+            WHEN N'Shiner Ltd' THEN CONVERT(SMALLINT, CASE
+            WHEN [gbp_sales] = 0 THEN 127
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= -ABS([gbp_sales]) THEN -10
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.9 THEN -9
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.8 THEN -8
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.7 THEN -7
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.6 THEN -6
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.5 THEN -5
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.4 THEN -4
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.3 THEN -3
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.2 THEN -2
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * -0.1 THEN -1
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= 0 THEN 0
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.1 THEN 1
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.2 THEN 2
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.3 THEN 3
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.4 THEN 4
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.5 THEN 5
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.6 THEN 6
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.7 THEN 7
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.8 THEN 8
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) * 0.9 THEN 9
+            WHEN (CASE WHEN [gbp_sales] < 0 THEN -[gbp_adjusted_margin] ELSE [gbp_adjusted_margin] END) <= ABS([gbp_sales]) THEN 10
+            ELSE 11 END)
+            WHEN N'Shiner B.V' THEN CONVERT(SMALLINT, CASE
+            WHEN [eur_sales] = 0 THEN 127
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= -ABS([eur_sales]) THEN -10
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.9 THEN -9
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.8 THEN -8
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.7 THEN -7
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.6 THEN -6
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.5 THEN -5
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.4 THEN -4
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.3 THEN -3
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.2 THEN -2
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * -0.1 THEN -1
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= 0 THEN 0
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.1 THEN 1
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.2 THEN 2
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.3 THEN 3
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.4 THEN 4
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.5 THEN 5
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.6 THEN 6
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.7 THEN 7
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.8 THEN 8
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) * 0.9 THEN 9
+            WHEN (CASE WHEN [eur_sales] < 0 THEN -[eur_adjusted_margin] ELSE [eur_adjusted_margin] END) <= ABS([eur_sales]) THEN 10
+            ELSE 11 END)
+            WHEN N'Shiner LLC' THEN CONVERT(SMALLINT, CASE
+            WHEN [usd_sales] = 0 THEN 127
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= -ABS([usd_sales]) THEN -10
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.9 THEN -9
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.8 THEN -8
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.7 THEN -7
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.6 THEN -6
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.5 THEN -5
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.4 THEN -4
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.3 THEN -3
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.2 THEN -2
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * -0.1 THEN -1
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= 0 THEN 0
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.1 THEN 1
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.2 THEN 2
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.3 THEN 3
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.4 THEN 4
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.5 THEN 5
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.6 THEN 6
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.7 THEN 7
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.8 THEN 8
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) * 0.9 THEN 9
+            WHEN (CASE WHEN [usd_sales] < 0 THEN -[usd_adjusted_margin] ELSE [usd_adjusted_margin] END) <= ABS([usd_sales]) THEN 10
+            ELSE 11 END)
+            ELSE CONVERT(SMALLINT, 127)
+        END) PERSISTED
         ,[gbp_sales]                    DECIMAL(38, 20) NOT NULL
         ,[gbp_cost]                     DECIMAL(38, 20) NOT NULL
         ,[gbp_royalty]                  DECIMAL(38, 20) NOT NULL
@@ -63,6 +143,12 @@ IF EXISTS [dbo].[sales];
 
 GO
 
+-- One bin per sale: Ltd uses GBP, B.V uses EUR, LLC uses USD.
+-- Adjusted margin / sales, with upper-inclusive 10-point bands.
+-- -10 = <= -100%; -9..10 = (previous boundary, upper boundary];
+-- 11 = > 100%; 127 = undefined (zero sales or unmapped entity). The bin is also its sort key.
+-- Compare amounts rather than a rounded percentage; returns use the sales sign.
+
 -- Supports the most common reporting pattern: filtering an entity by a posting
 -- date range and then grouping by customer, brand, item or sales type.
 
@@ -84,6 +170,7 @@ INCLUDE (
 	,[eur_adjusted_margin]
 	,[usd_sales]
 	,[usd_adjusted_margin]
+	,[margin_bin]
 	);
 
 -- Supports same-calendar-date previous-year sales and adjusted margin cards.
