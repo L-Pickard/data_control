@@ -84,11 +84,11 @@ END
 GO
 
 -- Assign the user to roles
-PRINT 'shiner_reports added to db_datareader and db_datawriter for data_control.';
+-- shiner_reports is deliberately in no database roles (no db_datareader/db_datawriter): it reads only the objects
+-- granted in grants_shiner_reports_portal.sql.
 GO
 
-GRANT EXECUTE
-    TO [shiner_reports];
-
-PRINT 'EXECUTE permission granted to shiner_reports for data_control.';
+-- shiner_reports gets no database-wide EXECUTE (the portal runs no procedures; some change data). Its object
+-- permissions, including EXECUTE on dbo.fnc_convert_currency only, are in grants_shiner_reports_portal.sql.
+PRINT 'shiner_reports permissions: run grants_shiner_reports_portal.sql.';
 GO

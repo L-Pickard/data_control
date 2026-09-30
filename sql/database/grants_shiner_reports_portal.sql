@@ -27,16 +27,23 @@ GRANT SELECT ON [dbo].[items] TO [shiner_reports];
 GRANT SELECT ON [dbo].[sales_people] TO [shiner_reports];
 GRANT SELECT ON [dbo].[dates] TO [shiner_reports];
 GRANT SELECT ON [dbo].[date_catalogue] TO [shiner_reports];
+-- Customer Sales orderbook, converted to the report currency at today's rate (a scalar function needs EXECUTE).
+GRANT SELECT ON [dbo].[sales_orders] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[fnc_convert_currency] TO [shiner_reports];
+-- Item Sales style and item images (a dbo view over dbo.items, item_images and item_image_locations).
+GRANT SELECT ON [dbo].[item_image_catalogue] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
 
 GO
 
--- Review: users.sql also grants EXECUTE on every procedure in data_control to shiner_reports. The portal does not
--- need it (it runs no procedures), and some procedures change data. If nothing else uses this login for procedures,
--- remove it with:
---   REVOKE EXECUTE TO [shiner_reports];
+-- No database-wide EXECUTE: the portal runs no procedures, and some procedures change data. It needs EXECUTE only on
+-- dbo.fnc_convert_currency (granted above). users.sql used to grant EXECUTE on the whole database; this removes it
+-- (the object-level grant above is kept). Revoked 1 October 2026 at the user's request.
+REVOKE EXECUTE TO [shiner_reports];
+
+GO
 
 SELECT dp.[permission_name], dp.[class_desc]
 	,CASE dp.[class]
