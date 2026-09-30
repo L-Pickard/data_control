@@ -68,3 +68,10 @@ IF EXISTS [dbo].[items]
 		)
 
 CREATE NONCLUSTERED INDEX [IX_items_brand_id] ON [dbo].[items] ([brand_id]);
+
+-- Styles: lookups by common item number (Shiner Reports Item Sales; dbo.item_image_catalogue by style).
+-- Added by migrations/20260930_add_items_common_item_no_index.sql.
+CREATE NONCLUSTERED INDEX [IX_items_common_item_no] ON [dbo].[items] ([common_item_no]) INCLUDE (
+	[description]
+	,[brand_id]
+	);
