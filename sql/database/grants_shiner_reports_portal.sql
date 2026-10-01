@@ -32,6 +32,15 @@ GRANT SELECT ON [dbo].[sales_orders] TO [shiner_reports];
 GRANT EXECUTE ON [dbo].[fnc_convert_currency] TO [shiner_reports];
 -- Item Sales style and item images (a dbo view over dbo.items, item_images and item_image_locations).
 GRANT SELECT ON [dbo].[item_image_catalogue] TO [shiner_reports];
+-- Data Export app (My Apps): the other tables in its catalogue (the portal's Data/export-catalog.json). The app
+-- exposes every column of these tables, including customer and vendor contact details, to people granted the app.
+GRANT SELECT ON [dbo].[entities] TO [shiner_reports];
+GRANT SELECT ON [dbo].[exchange_rates] TO [shiner_reports];
+GRANT SELECT ON [dbo].[inventory] TO [shiner_reports];
+GRANT SELECT ON [dbo].[item_packaging] TO [shiner_reports];
+GRANT SELECT ON [dbo].[preorders] TO [shiner_reports];
+GRANT SELECT ON [dbo].[purchase_orders] TO [shiner_reports];
+GRANT SELECT ON [dbo].[vendors] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
