@@ -133,6 +133,7 @@ IF EXISTS [dbo].[sales];
         ,[usd_adjusted_margin]          DECIMAL(38, 20) NOT NULL
         ,CONSTRAINT PK_sales PRIMARY KEY CLUSTERED ([posting_date], [location_code], [customer_id], [document_no], [doc_type], [entity], [item_id], [salesperson_id])
         ,CONSTRAINT FK_sales_customers FOREIGN KEY ([customer_id]) REFERENCES [dbo].[customers]([customer_id])
+        ,CONSTRAINT FK_sales_items FOREIGN KEY ([item_id]) REFERENCES [dbo].[items]([item_id])
         ,CONSTRAINT FK_sales_sales_people FOREIGN KEY ([salesperson_id]) REFERENCES [dbo].[sales_people](salesperson_id)
         ,CONSTRAINT FK_sales_countries FOREIGN KEY ([country_id]) REFERENCES [dbo].[countries]([country_id])
 		,CONSTRAINT FK_sales_brands FOREIGN KEY ([brand_id]) REFERENCES [dbo].[brands]([brand_id])

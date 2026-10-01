@@ -5,7 +5,7 @@ from sqlalchemy.engine import Engine
 
 from shinerutils.constants import DOCUMENTS, SELECTS_SQL04, SELECTS_SQL05
 from shinerutils.logging import DatabaseLogger
-from shinerutils.sql import execute_sql_procedure, write_df_to_sql_db
+from shinerutils.updates.dimensions import upsert_dimension
 from shinerutils.utils import concurrent_df_load
 
 
@@ -126,88 +126,14 @@ def update_countries_table(
 
         return None
 
-    action = "remove country foreign key constraints and delete old countries data."
-
-    execute_sql = """
-    ALTER TABLE [dbo].[customers] NOCHECK CONSTRAINT [fk_customers_countries];
-	IF EXISTS (
-		SELECT 1 FROM sys.foreign_keys
-		WHERE [name] = N'FK_vendors_countries'
-			AND [parent_object_id] = OBJECT_ID(N'dbo.vendors')
-	)
-		ALTER TABLE [dbo].[vendors] NOCHECK CONSTRAINT [FK_vendors_countries];
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-		ALTER TABLE [dbo].[sales_orders] NOCHECK CONSTRAINT
-			[FK_sales_orders_ship_to_countries], [FK_sales_orders_vat_countries];
-
-    DELETE FROM [dbo].[countries];
-    """
-
+    action = "atomically update and insert countries while preserving referenced codes"
     try:
-        _, err = execute_sql_procedure(engine_sql18, execute_sql)
-        if err is not None:
-            raise RuntimeError(err)
+        upsert_dimension(engine_sql18, "countries", df)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            table="countries",
-            action=action,
-            message=f"an error has occurred. ERROR: {e}",
+            table="countries", action=action,
+            message=f"dimension update failed: {e}",
         )
-
-        return None
-
-    action = "write new countries data to sql18 countries table"
-
-    try:
-        write_df_to_sql_db(engine_sql18, "countries", df, "append", rows)
-    except Exception as e:  # noqa: BLE001
-        logger.error(
-            table="countries",
-            action=action,
-            message=f"an error has occurred: Error {e}",
-        )
-
-        return None
-
-    action = "apply country foreign key constraints for countries table."
-
-    execute_sql = """
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-	BEGIN
-		UPDATE so SET [ship_to_country_id] = NULL
-		FROM [dbo].[sales_orders] AS so
-		WHERE so.[ship_to_country_id] IS NOT NULL AND NOT EXISTS (
-			SELECT 1 FROM [dbo].[countries] AS c
-			WHERE c.[country_id] = so.[ship_to_country_id]);
-		UPDATE so SET [vat_country_id] = NULL
-		FROM [dbo].[sales_orders] AS so
-		WHERE so.[vat_country_id] IS NOT NULL AND NOT EXISTS (
-			SELECT 1 FROM [dbo].[countries] AS c
-			WHERE c.[country_id] = so.[vat_country_id]);
-	END;
-    ALTER TABLE [dbo].[customers] WITH CHECK CHECK CONSTRAINT [fk_customers_countries];
-	IF EXISTS (
-		SELECT 1 FROM sys.foreign_keys
-		WHERE [name] = N'FK_vendors_countries'
-			AND [parent_object_id] = OBJECT_ID(N'dbo.vendors')
-	)
-		ALTER TABLE [dbo].[vendors] WITH CHECK CHECK CONSTRAINT [FK_vendors_countries];
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-		ALTER TABLE [dbo].[sales_orders] WITH CHECK CHECK CONSTRAINT
-			[FK_sales_orders_ship_to_countries], [FK_sales_orders_vat_countries];
-    """
-
-    try:
-        _, err = execute_sql_procedure(engine_sql18, execute_sql)
-        if err is not None:
-            raise RuntimeError(err)
-    except Exception as e:  # noqa: BLE001
-        logger.error(
-            table="countries",
-            action=action,
-            message=f"unable to apply constraints. ERROR: {e}",
-        )
-
         return None
 
     return rows

@@ -71,7 +71,7 @@ def main() -> None:
             logger.success(
                 table="sales_people",
                 action=action,
-                message=f"sales_people table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                message=f"sales_people table successfully updated. {rows_affected} source rows processed; existing historical codes retained.",
                 rows=rows_affected,
             )
 
@@ -104,7 +104,7 @@ def main() -> None:
             logger.success(
                 table="countries",
                 action=action,
-                message=f"countries table has sucessfully been updated. {rows_affected} were inserted. old data was replaced.",
+                message=f"countries table successfully updated. {rows_affected} source rows processed; existing historical codes retained.",
                 rows=rows_affected,
             )
 

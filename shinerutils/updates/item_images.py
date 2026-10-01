@@ -707,6 +707,26 @@ def _item_ids(engine: Engine) -> set[str]:
         }
 
 
+def _record_link_path(raw_url: str) -> Path:
+    """Accept NAV file URLs as well as ordinary UNC record-link paths."""
+    from urllib.parse import unquote, urlsplit
+
+    value = str(raw_url).strip()
+    if value.casefold().startswith("file://"):
+        value = value[7:]
+        if value.startswith("\\\\"):
+            # NAV stores file:// followed directly by a Windows UNC path.
+            value = unquote(value)
+        else:
+            parsed = urlsplit("file://" + value)
+            value = unquote(
+                ("//" + parsed.netloc if parsed.netloc else "") + parsed.path
+            )
+            if len(value) > 2 and value[0] == "/" and value[2] == ":":
+                value = value[1:]
+    return Path(value)
+
+
 def _product_image_links(
     engine: Engine,
     root: Path,
@@ -714,7 +734,7 @@ def _product_image_links(
 ) -> list[tuple[Path, str]]:
     """Read unblocked LTD image paths from record_link without crawling Item Docs."""
 
-    root_path = os.path.normcase(os.path.abspath(root))
+    root_path = os.path.normcase(os.path.normpath(os.path.abspath(root)))
     files: dict[str, tuple[Path, str]] = {}
     ignored = 0
     with engine.connect() as connection:
@@ -730,13 +750,13 @@ def _product_image_links(
             "AND rl.[url] IS NOT NULL;"
         )
         for item_id, raw_url in rows:
-            path = Path(str(raw_url).strip())
+            path = _record_link_path(raw_url)
             if (
                 is_ignored_system_file(path)
                 or path.suffix.casefold() not in IMAGE_EXTENSIONS
             ):
                 continue
-            normalized_path = os.path.normcase(os.path.abspath(path))
+            normalized_path = os.path.normcase(os.path.normpath(os.path.abspath(path)))
             try:
                 if os.path.commonpath((root_path, normalized_path)) != root_path:
                     ignored += 1
@@ -946,10 +966,18 @@ def update_item_images_table(
 
         frame, unmatched = _combine_locations(source_records)
         if unmatched:
+            matched_keys = set(zip(frame["image_type"], frame["image_key"]))
+            examples = sorted({
+                f"{record['source_code']}: {record['file_name']}"
+                for records in source_records
+                for record in records
+                if (record["image_type"], record["image_key"]) not in matched_keys
+            })[:20]
             logger.warning(
                 table=TABLE,
                 action="match images to items",
-                message=f"ignored {unmatched} source files that did not match an item",
+                message=f"ignored {unmatched} source files that did not match an item. "
+                f"Examples (up to 20): {'; '.join(examples)}",
                 rows=unmatched,
             )
 

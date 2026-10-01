@@ -51,6 +51,20 @@ BEGIN
 					WHERE refs.[item_id] = so.[item_id]
 				);
 
+		IF OBJECT_ID(N'dbo.sales', N'U') IS NOT NULL
+			INSERT INTO #referenced_items ([item_id])
+			SELECT DISTINCT s.[item_id]
+			FROM [dbo].[sales] AS s
+			WHERE s.[item_id] IS NOT NULL
+				AND NOT EXISTS (SELECT 1 FROM #referenced_items AS refs WHERE refs.[item_id] = s.[item_id]);
+
+		IF OBJECT_ID(N'dbo.inventory', N'U') IS NOT NULL
+            INSERT INTO #referenced_items ([item_id])
+            SELECT DISTINCT inv.[item_id]
+            FROM [dbo].[inventory] AS inv
+            WHERE inv.[item_id] IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM #referenced_items AS refs WHERE refs.[item_id] = inv.[item_id]);
+
 		INSERT INTO [dbo].[brands] ([brand_id])
 		SELECT refs.[brand_id]
 		FROM (
@@ -73,6 +87,12 @@ BEGIN
 		IF OBJECT_ID(N'dbo.item_images', N'U') IS NOT NULL
 			ALTER TABLE [dbo].[item_images]
 				NOCHECK CONSTRAINT [FK_item_images_items];
+
+		IF OBJECT_ID(N'dbo.FK_sales_items', N'F') IS NOT NULL
+			ALTER TABLE [dbo].[sales] NOCHECK CONSTRAINT [FK_sales_items];
+
+        IF OBJECT_ID(N'dbo.FK_inventory_items', N'F') IS NOT NULL
+            ALTER TABLE [dbo].[inventory] NOCHECK CONSTRAINT [FK_inventory_items];
 
 		DELETE FROM [dbo].[items];
 
@@ -129,6 +149,12 @@ BEGIN
 		IF OBJECT_ID(N'dbo.item_images', N'U') IS NOT NULL
 			ALTER TABLE [dbo].[item_images] WITH CHECK
 				CHECK CONSTRAINT [FK_item_images_items];
+
+		IF OBJECT_ID(N'dbo.FK_sales_items', N'F') IS NOT NULL
+			ALTER TABLE [dbo].[sales] WITH CHECK CHECK CONSTRAINT [FK_sales_items];
+
+        IF OBJECT_ID(N'dbo.FK_inventory_items', N'F') IS NOT NULL
+            ALTER TABLE [dbo].[inventory] WITH CHECK CHECK CONSTRAINT [FK_inventory_items];
 
 		DROP TABLE [dbo].[items_staging];
 		IF @transaction_started = 1

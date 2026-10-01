@@ -1,21 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy.engine import Engine
-from sqlalchemy.dialects.mssql import BIT, NVARCHAR
 from pandas import concat
 
-from shinerutils.sql import execute_sql_procedure, write_df_to_sql_db
+from shinerutils.updates.dimensions import upsert_dimension
 from shinerutils.utils import concurrent_df_load
 from shinerutils.logging import DatabaseLogger
 from shinerutils.constants import SELECTS_SQL02, SELECTS_SQL04
-
-
-SALES_PEOPLE_DATATYPES = {
-    "salesperson_id": NVARCHAR(20),
-    "name": NVARCHAR(100),
-    "email": NVARCHAR(100),
-    "active": BIT(),
-}
 
 
 def update_sales_people_table(
@@ -121,88 +112,14 @@ def update_sales_people_table(
         )
 
         return None
-    action = "remove purchaser foreign key constraints and delete old sales_people data."
-
-    execute_sql = """
-	ALTER TABLE [dbo].[customers] NOCHECK CONSTRAINT [fk_customers_sales_people];
-	IF EXISTS (
-		SELECT 1 FROM sys.foreign_keys
-		WHERE [name] = N'FK_vendors_sales_people'
-			AND [parent_object_id] = OBJECT_ID(N'dbo.vendors')
-	)
-		ALTER TABLE [dbo].[vendors] NOCHECK CONSTRAINT [FK_vendors_sales_people];
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-		ALTER TABLE [dbo].[sales_orders]
-			NOCHECK CONSTRAINT [FK_sales_orders_sales_people];
-
-    DELETE FROM [dbo].[sales_people];
-    """
-
+    action = "atomically update and insert sales_people while preserving referenced codes"
     try:
-        _, err = execute_sql_procedure(engine_sql18, execute_sql)
-        if err is not None:
-            raise RuntimeError(err)
+        upsert_dimension(engine_sql18, "sales_people", df)
     except Exception as e:  # noqa: BLE001
         logger.error(
-            table="sales_people",
-            action=action,
-            message=f"an error has occcurred. ERROR: {e}",
+            table="sales_people", action=action,
+            message=f"dimension update failed: {e}",
         )
-
-        return None
-
-    action = "write new sales_people data to sql18 sales_people table"
-
-    try:
-        write_df_to_sql_db(
-            engine_sql18,
-            "sales_people",
-            df,
-            "append",
-            rows,
-            SALES_PEOPLE_DATATYPES,
-        )
-    except Exception as e:  # noqa: BLE001
-        logger.error(
-            table="sales_people",
-            action=action,
-            message=f"an error has occurred: Error {e}",
-        )
-
-        return None
-
-    action = "apply purchaser foreign key constraints for sales_people table."
-
-    execute_sql = """
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-		UPDATE so SET [salesperson_id] = NULL
-		FROM [dbo].[sales_orders] AS so
-		WHERE so.[salesperson_id] IS NOT NULL AND NOT EXISTS (
-			SELECT 1 FROM [dbo].[sales_people] AS sp
-			WHERE sp.[salesperson_id] = so.[salesperson_id]);
-    ALTER TABLE [dbo].[customers] WITH CHECK CHECK CONSTRAINT [fk_customers_sales_people];
-	IF EXISTS (
-		SELECT 1 FROM sys.foreign_keys
-		WHERE [name] = N'FK_vendors_sales_people'
-			AND [parent_object_id] = OBJECT_ID(N'dbo.vendors')
-	)
-		ALTER TABLE [dbo].[vendors] WITH CHECK CHECK CONSTRAINT [FK_vendors_sales_people];
-	IF OBJECT_ID(N'dbo.sales_orders', N'U') IS NOT NULL
-		ALTER TABLE [dbo].[sales_orders] WITH CHECK
-			CHECK CONSTRAINT [FK_sales_orders_sales_people];
-    """
-
-    try:
-        _, err = execute_sql_procedure(engine_sql18, execute_sql)
-        if err is not None:
-            raise RuntimeError(err)
-    except Exception as e:  # noqa: BLE001
-        logger.error(
-            table="sales_people",
-            action=action,
-            message=f"unable to apply constraints. ERROR: {e}",
-        )
-
         return None
 
     return rows

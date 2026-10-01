@@ -56,6 +56,7 @@ CREATE TABLE [dbo].[sales_orders] (
 	,[document_status] INTEGER NOT NULL
 	,[line_type] INTEGER NOT NULL
 	,[gl_account_id] NVARCHAR(20) NULL
+	,[brand_id] AS CAST(LEFT([item_id], 3) AS NVARCHAR(20)) PERSISTED
 	,[item_id] NVARCHAR(20) NULL
 	,[quantity] DECIMAL(38,20) NOT NULL
 	,[outstanding_quantity] DECIMAL(38,20) NOT NULL
@@ -112,6 +113,10 @@ CREATE NONCLUSTERED INDEX [IX_sales_orders_purchase_order]
 -- Supports bill-to customer lookups and the corresponding foreign key.
 CREATE NONCLUSTERED INDEX [IX_sales_orders_bill_to_customer]
 	ON [dbo].[sales_orders] ([bill_to_customer_id]);
+
+-- Supports filtering and joining order lines by their item's brand.
+CREATE NONCLUSTERED INDEX [IX_sales_orders_brand_id]
+	ON [dbo].[sales_orders] ([brand_id]);
 
 -- Supports financial-period reporting independently of the customer indexes.
 CREATE NONCLUSTERED INDEX [IX_sales_orders_posting_date]
