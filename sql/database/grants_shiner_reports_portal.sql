@@ -41,6 +41,11 @@ GRANT SELECT ON [dbo].[item_packaging] TO [shiner_reports];
 GRANT SELECT ON [dbo].[preorders] TO [shiner_reports];
 GRANT SELECT ON [dbo].[purchase_orders] TO [shiner_reports];
 GRANT SELECT ON [dbo].[vendors] TO [shiner_reports];
+-- Order Form Builder app (My Apps): the price lines of each preorder code (with dbo.items and dbo.brands above).
+GRANT SELECT ON [dbo].[preorder_lines] TO [shiner_reports];
+-- Preorders report: dbo.preorders and dbo.exchange_rates (both granted above, for the last four weeks' average
+-- rates) and the monthly average exchange rates for the preorder ETA date.
+GRANT SELECT ON [dbo].[monthly_avg_xr] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
