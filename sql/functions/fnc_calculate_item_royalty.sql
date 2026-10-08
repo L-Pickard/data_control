@@ -30,6 +30,15 @@ BEGIN
 	
 	END
 
+	-- No royalty on intercompany sales: it is paid once, on the sale to the outside customer. The customers are
+	-- the ones dbo.exclusions marks as intercompany for the selling entity (the same rule as sales.intercompany).
+
+	IF [dbo].[fnc_is_customer_intercompany](@entity, @customer_id) = 1
+	BEGIN
+		RETURN 0.0
+	
+	END
+
 	IF @customer_id IN (
 			  'CU105240' -- Prizes - Scoot lt 50
 			, 'CU105483' -- Team - D Street

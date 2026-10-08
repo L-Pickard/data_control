@@ -28,6 +28,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
 DECLARE @transaction_started BIT = 0;
+DECLARE @adjust_from DATE;
 
 BEGIN TRY
 	IF @@TRANCOUNT = 0
@@ -235,8 +236,6 @@ BEGIN TRY
 	INNER JOIN [dbo].[customers] AS cu
 		ON st.[customer_id] = cu.[customer_id];
 
-	EXEC [dbo].[update_adjusted_margin];
-
 	-- Advance each entity only when its staging rows contain a later posting date.
 
 	UPDATE en
@@ -252,10 +251,41 @@ BEGIN TRY
 		ON staged.[entity] = en.[entity]
 	WHERE staged.[max_posting_date] > en.[sales_increment];
 
-	-- Below we execute the stored procedure to update adjusted margins
+	-- Below we update adjusted margins for the rows this run has reloaded: Shiner B.V invoices from the earliest
+	-- staged posting date, and any earlier B.V invoice whose Shiner Ltd leg (customer CU109441) was reloaded.
+	-- Rows older than that have not changed, so they are not recalculated.
 
-	EXECUTE [dbo].[update_adjusted_margin]
-		 @start_date = '2025-05-01';
+	SELECT @adjust_from = MIN(d.[posting_date])
+	
+	FROM (
+		SELECT MIN(st.[posting_date]) AS [posting_date]
+		
+		FROM [dbo].[sales_staging] AS st
+		
+		UNION ALL
+		
+		SELECT MIN(bsl.[posting_date])
+		
+		FROM [dbo].[sales] AS bsl
+		
+		WHERE bsl.[entity] = 'Shiner B.V'
+			AND bsl.[doc_type] = 'SI'
+			AND bsl.[order_no] <> ''
+			AND EXISTS (
+				SELECT 1
+				
+				FROM [dbo].[sales_staging] AS lst
+				
+				WHERE lst.[entity] = 'Shiner Ltd'
+					AND lst.[customer_id] = 'CU109441'
+					AND lst.[doc_type] = 'SI'
+					AND lst.[order_no] = bsl.[order_no]
+				)
+		) AS d;
+
+	IF @adjust_from IS NOT NULL
+		EXECUTE [dbo].[update_adjusted_margin]
+			 @start_date = @adjust_from;
 
 	-- Below we drop the sales staging table after all operations are complete
 

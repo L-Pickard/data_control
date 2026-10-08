@@ -13,16 +13,25 @@ GO
 CREATE
 	OR
 
-ALTER PROCEDURE [dbo].[update_adjusted_margin] @start_date DATE = '2025-05-01'
+ALTER PROCEDURE [dbo].[update_adjusted_margin] @start_date DATE = NULL
 AS
 /*===============================================================================================================================================
 Project:  data_control Data Warehouse
 Language: TSQL
 Author:   Leo Pickard
-Version:  1.1
-Date:     06/08/2026
+Version:  1.2
+Date:     08/10/2026
 =================================================================================================================================================
 Resets and recalculates adjusted margins for matching Shiner B.V and Shiner Ltd sales invoice rows.
+
+A Shiner B.V invoice row is adjusted when Shiner Ltd invoiced the same order, item and quantity to Shiner B.V
+(customer CU109441). Its adjusted margin is its own margin plus the Ltd leg's sales less cost. Royalty and
+rebate are not taken off the Ltd leg: royalty is paid once, on the B.V sale to the customer. This is the rule
+the Finance database uses.
+
+@start_date: only B.V rows posted on or after this date are reset and recalculated. NULL recalculates the whole
+sales table. update_sales_table passes the start of the rows it has just reloaded, so the lookback follows the
+reload window and older rows are left as they are.
 ===============================================================================================================================================*/
 BEGIN
 	SET NOCOUNT ON;
@@ -40,6 +49,16 @@ BEGIN
 		
 		END;
 
+		-- Both statements below use OPTION (RECOMPILE) so each run is planned for its own start date: a plan made
+		-- for a week of rows must not be reused for the whole table, or the other way round.
+
+		IF @start_date IS NULL
+			SET @start_date = ISNULL((
+						SELECT MIN([posting_date])
+						
+						FROM [dbo].[sales]
+						), CAST(SYSDATETIME() AS DATE));
+
 		-- Reset only the rows controlled by this calculation. This makes reruns
 		-- deterministic and clears adjustments for rows that no longer qualify.
 
@@ -54,7 +73,9 @@ BEGIN
 		
 		WHERE sl.[entity] = 'Shiner B.V'
 			AND sl.[doc_type] = 'SI'
-			AND sl.[posting_date] >= @start_date;;
+			AND sl.[posting_date] >= @start_date
+		
+		OPTION (RECOMPILE);
 
 		WITH [bv_to_adjust]
 		AS (
@@ -80,9 +101,10 @@ BEGIN
 			SELECT lsl.[order_no]
 				,lsl.[item_id]
 				,SUM(lsl.[quantity]) AS [total_ltd_quantity]
-				,SUM(lsl.[gbp_margin]) AS [ltd_gbp_margin]
-				,SUM(lsl.[eur_margin]) AS [ltd_eur_margin]
-				,SUM(lsl.[usd_margin]) AS [ltd_usd_margin]
+				-- Sales less cost only: no royalty or rebate is taken off the intercompany leg.
+				,SUM(ISNULL(lsl.[gbp_sales], 0) - ISNULL(lsl.[gbp_cost], 0)) AS [ltd_gbp_margin]
+				,SUM(ISNULL(lsl.[eur_sales], 0) - ISNULL(lsl.[eur_cost], 0)) AS [ltd_eur_margin]
+				,SUM(ISNULL(lsl.[usd_sales], 0) - ISNULL(lsl.[usd_cost], 0)) AS [ltd_usd_margin]
 			
 			FROM [dbo].[sales] AS lsl
 			
@@ -147,7 +169,9 @@ BEGIN
 		
 		WHERE sl.[entity] = 'Shiner B.V'
 			AND sl.[doc_type] = 'SI'
-			AND sl.[posting_date] >= @start_date;
+			AND sl.[posting_date] >= @start_date
+		
+		OPTION (RECOMPILE);
 
 		IF @transaction_started = 1
 			COMMIT TRANSACTION;
