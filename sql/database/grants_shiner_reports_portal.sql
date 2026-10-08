@@ -46,6 +46,9 @@ GRANT SELECT ON [dbo].[preorder_lines] TO [shiner_reports];
 -- Preorders report: dbo.preorders and dbo.exchange_rates (both granted above, for the last four weeks' average
 -- rates) and the monthly average exchange rates for the preorder ETA date.
 GRANT SELECT ON [dbo].[monthly_avg_xr] TO [shiner_reports];
+-- "Data last updated" notes at the top of reports: when each table was last loaded successfully. Only the columns the
+-- note reads; not the log messages.
+GRANT SELECT ON [dbo].[db_log] ([timestamp], [level], [table], [action], [rows], [duration_seconds]) TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
