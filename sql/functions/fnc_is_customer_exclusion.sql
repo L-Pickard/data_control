@@ -13,12 +13,13 @@ GO
 CREATE OR ALTER FUNCTION [dbo].[fnc_is_customer_exclusion] (
 	 @entity NVARCHAR(20)
 	,@customer_id NVARCHAR(20)
+	,@brand_id NVARCHAR(20)
 	)
 RETURNS BIT
 AS
 /*===============================================================================================================================================
 Returns 1 when the entity/customer combination is configured as a customer
-exclusion in dbo.exclusions; otherwise returns 0.
+exclusion in dbo.exclusions for all brands (blank brand_id) or the supplied brand; otherwise returns 0.
 ===============================================================================================================================================*/
 BEGIN
 	DECLARE @is_exclusion BIT = 0;
@@ -30,6 +31,7 @@ BEGIN
 				AND [type] = 'exclusion'
 				AND [table_name] = 'customers'
 				AND [id] = @customer_id
+				AND ([brand_id] = N'' OR [brand_id] = @brand_id)
 			)
 	BEGIN
 		SET @is_exclusion = 1;

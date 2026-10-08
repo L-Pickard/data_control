@@ -17,11 +17,14 @@ CREATE TABLE [dbo].[exclusions] (
 		,[type] NVARCHAR(20) NOT NULL
 		,[table_name] NVARCHAR(20) NOT NULL
 		,[id] NVARCHAR(20) NOT NULL
+		,[brand_id] NVARCHAR(20) NOT NULL CONSTRAINT [DF_exclusions_brand_id] DEFAULT (N'')
+		,CONSTRAINT [CK_exclusions_brand_scope] CHECK ([brand_id] = N'' OR ([type] = N'exclusion' AND [table_name] = N'customers'))
 		,CONSTRAINT [PK_exclusions] PRIMARY KEY CLUSTERED (
 			 [entity]
 			,[type]
 			,[table_name]
 			,[id]
+			,[brand_id]
 			)
 		,CONSTRAINT [FK_exclusions_entities] FOREIGN KEY ([entity])
 			REFERENCES [dbo].[entities] ([entity])
@@ -102,5 +105,18 @@ CROSS JOIN (
         ,(N'intercompany', N'VE100934') -- Shiner LLC
         ,(N'intercompany', N'VE100952') -- Shiner EU B.V.
 ) AS rules ([type], [id]);
+
+GO
+
+-- Blank brand_id preserves whole-customer/vendor rules. These rules are brand-specific.
+INSERT dbo.exclusions (entity, [type], table_name, id, brand_id)
+SELECT en.entity, N'exclusion', N'customers', cu.id, br.brand_id
+FROM dbo.entities AS en
+CROSS JOIN (VALUES (N'CU100487'), (N'CU108312')) AS cu(id)
+CROSS JOIN (VALUES (N'BSC'), (N'BUU'), (N'CRE'), (N'KRX'), (N'MOB'),
+                   (N'OJW'), (N'RIC'), (N'SLM'), (N'SCR'), (N'IND'), (N'NHS')) AS br(brand_id)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.exclusions AS ex
+    WHERE ex.entity = en.entity AND ex.[type] = N'exclusion'
+      AND ex.table_name = N'customers' AND ex.id = cu.id AND ex.brand_id = br.brand_id);
 
 GO

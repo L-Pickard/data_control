@@ -203,7 +203,7 @@ BEGIN TRY
 		,st.[country_id]
 		,st.[entity]
 		,0 AS [is_adjusted]
-		,[dbo].[fnc_is_customer_exclusion](st.[entity], st.[customer_id]) 			AS [exclusion]
+		,[dbo].[fnc_is_customer_exclusion](st.[entity], st.[customer_id], CAST(LEFT(st.[item_id], 3) AS NVARCHAR(20))) 			AS [exclusion]
 		,[dbo].[fnc_is_customer_intercompany](st.[entity], st.[customer_id]) 		AS [intercompany]
 		,CASE 
 			WHEN cu.[customer_name] LIKE '%D2C%'

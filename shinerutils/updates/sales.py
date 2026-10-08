@@ -160,14 +160,18 @@ def update_sales_table(
     if rows == 0:
         action = "sales dataframe row length check"
 
-        logger.error(  # noqa: PLE1205
+        logger.info(
             table="sales",
             action=action,
-            message="the dataframe has no rows of data",
+            message=(
+                "Both sales source queries completed successfully; no new sales "
+                f"after increment dates Ltd={start_date_ltd}, B.V={start_date_bv}, "
+                f"LLC={start_date_llc}. Existing sales and increments were retained."
+            ),
             rows=0,
         )
 
-        return None
+        return 0
 
     action = "write new sales data to sql18 sales_staging table"
 

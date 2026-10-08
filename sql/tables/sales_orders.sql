@@ -19,7 +19,7 @@ CREATE TABLE [dbo].[sales_orders] (
 	,[entity] NVARCHAR(20) NOT NULL
 	-- Finance orderbook rules use the sell-to customer.
 	-- Non-persisted flags also reflect subsequent dbo.exclusions changes.
-	,[exclusion] AS [dbo].[fnc_is_customer_exclusion]([entity], [sell_to_customer_id])
+	,[exclusion] AS [dbo].[fnc_is_customer_exclusion]([entity], [sell_to_customer_id], CAST(LEFT([item_id], 3) AS NVARCHAR(20)))
 	,[intercompany] AS [dbo].[fnc_is_customer_intercompany]([entity], [sell_to_customer_id])
 	,[document_type] INTEGER NOT NULL
 	,[document_no] NVARCHAR(20) NOT NULL

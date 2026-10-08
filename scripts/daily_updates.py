@@ -484,6 +484,14 @@ def main() -> None:
                 action=action,
                 message="sales table update has failed",
             )
+        elif rows_affected == 0:
+            print("No new sales; existing sales retained")
+            logger.success(
+                table="sales",
+                action=action,
+                message="No new sales; existing sales and increment dates retained.",
+                rows=0,
+            )
         else:
 
             successful_tables.extend(["sales"])

@@ -30,6 +30,7 @@ BEGIN
 				AND [type] = 'intercompany'
 				AND [table_name] = 'vendors'
 				AND [id] = @vendor_id
+				AND [brand_id] = N''
 			)
 	BEGIN
 		SET @is_intercompany = 1;
