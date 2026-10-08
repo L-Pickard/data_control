@@ -43,9 +43,13 @@ BEGIN
 			
 			END;
 
-			DROP TABLE
-
-			IF EXISTS [dbo].[preorder_lines];
+			-- Empty and refill the table instead of dropping it. Dropping a table removes every permission granted on it,
+			-- so the portal's runtime login (shiner_reports) lost SELECT after each load and the Order Form Builder stopped
+			-- working (found 8 October 2026). The definition below matches sql/tables/preorder_lines.sql; change the table
+			-- with a migration, not here.
+			IF OBJECT_ID(N'dbo.preorder_lines', N'U') IS NOT NULL
+				TRUNCATE TABLE [dbo].[preorder_lines];
+			ELSE
 				CREATE TABLE [dbo].[preorder_lines] (
 					[row_no] INTEGER IDENTITY(1, 1) NOT NULL
 					,[preorder_code] NVARCHAR(50) NULL
@@ -99,7 +103,15 @@ BEGIN
 
 			SET @refreshed_rows = @@ROWCOUNT;
 
-			CREATE NONCLUSTERED INDEX [IX_preorder_lines_preorder_currency_item] ON [dbo].[preorder_lines] (
+			IF NOT EXISTS (
+					SELECT 1
+
+					FROM sys.indexes
+
+					WHERE [object_id] = OBJECT_ID(N'dbo.preorder_lines')
+						AND [name] = N'IX_preorder_lines_preorder_currency_item'
+					)
+				CREATE NONCLUSTERED INDEX [IX_preorder_lines_preorder_currency_item] ON [dbo].[preorder_lines] (
 				[preorder_code]
 				,[currency_code]
 				,[item_id]
@@ -108,7 +120,15 @@ BEGIN
 				,[srp_price]
 				);
 
-			CREATE NONCLUSTERED INDEX [IX_preorder_lines_item] ON [dbo].[preorder_lines] ([item_id]) INCLUDE (
+			IF NOT EXISTS (
+					SELECT 1
+
+					FROM sys.indexes
+
+					WHERE [object_id] = OBJECT_ID(N'dbo.preorder_lines')
+						AND [name] = N'IX_preorder_lines_item'
+					)
+				CREATE NONCLUSTERED INDEX [IX_preorder_lines_item] ON [dbo].[preorder_lines] ([item_id]) INCLUDE (
 				[preorder_code]
 				,[currency_code]
 				,[trade_price]
