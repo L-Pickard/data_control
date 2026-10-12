@@ -197,7 +197,9 @@ BEGIN TRY
 		,st.[location_code]
 		,st.[customer_id]
 		,st.[document_no]
-		,st.[order_no]
+		-- A missing source header has no order number; retain the sale with the
+		-- existing blank-order convention (excluded from intercompany matching).
+		,ISNULL(st.[order_no], N'') AS [order_no]
 		,st.[doc_type]
 		,st.[salesperson_id]
 		,st.[country_id]
