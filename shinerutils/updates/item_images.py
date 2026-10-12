@@ -63,6 +63,7 @@ IMAGE_EXTENSIONS = {
     ".tiff",
     ".webp",
 }
+SOURCE_CODES = ("SP_PRODUCT", "SP_THUMBNAIL", "NAS_ITEM_DOCS", "NAS_THUMBNAIL", "SQL18_THUMBNAIL")
 STAGING_COLUMNS = [
     "item_id",
     "image_key",
@@ -129,6 +130,9 @@ class ImageSourceSettings:
     thumbnail_drive_id: str | None
     item_docs_path: Path
     thumbnail_path: Path
+    # The thumbnail folder on SHINERSQL18: a copy of thumbnail_path plus the thumbnails made from product
+    # photos (scripts/make_item_thumbnails.py). Catalogued as its own source; never uploaded to SharePoint.
+    sql18_thumbnail_path: Path
     product_upload_workers: int
     thumbnail_upload_workers: int
 
@@ -199,6 +203,13 @@ class ImageSourceSettings:
                     default=r"\\Shinernas01\ShinerData\MARKETING\001 Master Thumbnail Images",
                 )
                 or r"\\Shinernas01\ShinerData\MARKETING\001 Master Thumbnail Images"
+            ),
+            sql18_thumbnail_path=Path(
+                environment_value(
+                    "IMAGE_SQL18_THUMBNAIL_PATH",
+                    default=r"\\SHINERSQL18\001 Master Thumbnail Images",
+                )
+                or r"\\SHINERSQL18\001 Master Thumbnail Images"
             ),
             product_upload_workers=parsed_workers["product_upload_workers"],
             thumbnail_upload_workers=parsed_workers["thumbnail_upload_workers"],
@@ -851,7 +862,7 @@ def update_item_images_table(
     engine_sql18: Engine,
     logger: DatabaseLogger,
 ) -> int | None:
-    """Refresh item images from two SharePoint libraries and two UNC roots."""
+    """Refresh item images from two SharePoint libraries and three UNC roots."""
 
     try:
         _progress("Starting upload and SQL catalogue refresh.")
@@ -898,7 +909,7 @@ def update_item_images_table(
         thumbnail_session = create_graph_session(token)
 
         try:
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [
                     executor.submit(
                         _sharepoint_records,
@@ -933,6 +944,14 @@ def update_item_images_table(
                         matcher,
                         item_from_top_folder=False,
                     ),
+                    executor.submit(
+                        _network_records,
+                        settings.sql18_thumbnail_path,
+                        "SQL18_THUMBNAIL",
+                        "THUMBNAIL",
+                        matcher,
+                        item_from_top_folder=False,
+                    ),
                 ]
                 source_records = [future.result() for future in futures]
         finally:
@@ -944,7 +963,7 @@ def update_item_images_table(
             + ", ".join(
                 f"{source}={len(records):,}"
                 for source, records in zip(
-                    ("SP_PRODUCT", "SP_THUMBNAIL", "NAS_ITEM_DOCS", "NAS_THUMBNAIL"),
+                    SOURCE_CODES,
                     source_records,
                     strict=True,
                 )
@@ -953,7 +972,7 @@ def update_item_images_table(
         )
 
         for source, records in zip(
-            ("SP_PRODUCT", "SP_THUMBNAIL", "NAS_ITEM_DOCS", "NAS_THUMBNAIL"),
+            SOURCE_CODES,
             source_records,
             strict=True,
         ):

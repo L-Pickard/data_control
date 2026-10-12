@@ -3,14 +3,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pandas import concat, merge, read_csv
 from sqlalchemy.engine import Engine
 
-from shinerutils.constants import DOCUMENTS, SELECTS_SQL04, SELECTS_SQL05
+from shinerutils.constants import DOCUMENTS, SELECTS_SQL02, SELECTS_SQL04
 from shinerutils.logging import DatabaseLogger
 from shinerutils.updates.dimensions import upsert_dimension
 from shinerutils.utils import concurrent_df_load
 
 
 def update_countries_table(
-    engine_sql04: Engine, engine_sql05: Engine, engine_sql18: Engine, logger: DatabaseLogger
+    engine_sql02: Engine, engine_sql04: Engine, engine_sql18: Engine, logger: DatabaseLogger
 ) -> int | None:
 
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -22,20 +22,20 @@ def update_countries_table(
             "sql04 countries",
         )
 
-        future_sql05 = executor.submit(
+        future_sql02 = executor.submit(
             concurrent_df_load,
-            engine_sql05,
-            SELECTS_SQL05 / "countries.sql",
+            engine_sql02,
+            SELECTS_SQL02 / "countries.sql",
             logger,
-            "sql05 countries",
+            "sql02 countries",
         )
 
     try:
 
-        action = "load sql04/sql05 countries data concurrently"
+        action = "load sql02/sql04 countries data concurrently"
 
         df_sql04, err_sql04 = future_sql04.result()
-        df_sql05, err_sql05 = future_sql05.result()
+        df_sql02, err_sql02 = future_sql02.result()
 
     except Exception as e:
 
@@ -55,31 +55,31 @@ def update_countries_table(
             message=err_sql04,
         )
 
-    if err_sql05 is not None:
-        action = "read in and execute sql05 countries query and return results as a dataframe."
+    if err_sql02 is not None:
+        action = "read in and execute sql02 countries query and return results as a dataframe."
         logger.error(
             table="countries",
             action=action,
-            message=err_sql05,
+            message=err_sql02,
         )
 
-    if err_sql04 is not None or err_sql05 is not None:
+    if err_sql04 is not None or err_sql02 is not None:
         return None
 
-    # it's not actually possible for df_sql04 or df_sql05 to be returned as none without an error string being returned also.
+    # it's not actually possible for df_sql04 or df_sql02 to be returned as none without an error string being returned also.
     # I added the below to stop pylance moaning at me!
 
     assert df_sql04 is not None, "df_sql04 should not be None here"
-    assert df_sql05 is not None, "df_sql05 should not be None here"
+    assert df_sql02 is not None, "df_sql02 should not be None here"
 
-    action = "remove country codes from df_sql04 where they exists in df_sql05"
+    action = "remove country codes from df_sql04 where they exists in df_sql02"
 
     try:
-        country_codes_df_sql05 = set(df_sql05["country_id"])
+        country_codes_df_sql02 = set(df_sql02["country_id"])
 
-        df_sql04 = df_sql04[~df_sql04["country_id"].isin(country_codes_df_sql05)]
+        df_sql04 = df_sql04[~df_sql04["country_id"].isin(country_codes_df_sql02)]
 
-        df = concat([df_sql04, df_sql05], ignore_index=True)
+        df = concat([df_sql04, df_sql02], ignore_index=True)
 
     except Exception as e:
         logger.error(

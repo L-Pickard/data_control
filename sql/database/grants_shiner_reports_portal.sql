@@ -46,17 +46,37 @@ GRANT SELECT ON [dbo].[preorder_lines] TO [shiner_reports];
 -- Preorders report: dbo.preorders and dbo.exchange_rates (both granted above, for the last four weeks' average
 -- rates) and the monthly average exchange rates for the preorder ETA date.
 GRANT SELECT ON [dbo].[monthly_avg_xr] TO [shiner_reports];
--- "Data last updated" notes at the top of reports: when each table was last loaded successfully. Only the columns the
--- note reads; not the log messages.
-GRANT SELECT ON [dbo].[db_log] ([timestamp], [level], [table], [action], [rows], [duration_seconds]) TO [shiner_reports];
+-- The load log. "Data last updated" notes at the top of reports read when each table was last loaded successfully.
+-- The Database Log app (12 October 2026) shows every column, deletes old records (DELETE; the portal has its own
+-- permission for that and always keeps the newest SUCCESS record of each table and action) and writes one record
+-- of each delete (INSERT). No UPDATE.
+GRANT SELECT, INSERT, DELETE ON [dbo].[db_log] TO [shiner_reports];
+-- Exclusions & Deductions app (12 October 2026): reads the two rule tables, their saved copies and the record of
+-- checks and recalculations. It has NO write permission on any of them, or on dbo.sales: every change goes through
+-- the procedures below, which validate it, save a copy of the rules first and record it in db_log (they run with
+-- the owner's rights through ownership chaining, so EXECUTE is all the portal needs). The portal has its own
+-- permission for these. Run sql/migrations/20261012_add_margin_rule_management.sql and the procedure files first.
+GRANT SELECT ON [dbo].[exclusions] TO [shiner_reports];
+GRANT SELECT ON [dbo].[deductions] TO [shiner_reports];
+GRANT SELECT ON [dbo].[margin_rule_snapshots] TO [shiner_reports];
+GRANT SELECT ON [dbo].[margin_rule_snapshot_exclusions] TO [shiner_reports];
+GRANT SELECT ON [dbo].[margin_rule_snapshot_deductions] TO [shiner_reports];
+GRANT SELECT ON [dbo].[margin_rule_runs] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[save_margin_rule_snapshot] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[restore_margin_rule_snapshot] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[add_exclusion_rule] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[delete_exclusion_rule] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[add_deduction_rule] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[delete_deduction_rule] TO [shiner_reports];
+GRANT EXECUTE ON [dbo].[run_margin_rule_recalculation] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
 
 GO
 
--- No database-wide EXECUTE: the portal runs no procedures, and some procedures change data. It needs EXECUTE only on
--- dbo.fnc_convert_currency (granted above). users.sql used to grant EXECUTE on the whole database; this removes it
+-- No database-wide EXECUTE: some procedures change data. The portal needs EXECUTE only on dbo.fnc_convert_currency
+-- and the seven margin-rule procedures (granted above). users.sql used to grant EXECUTE on the whole database; this removes it
 -- (the object-level grant above is kept). Revoked 1 October 2026 at the user's request.
 REVOKE EXECUTE TO [shiner_reports];
 

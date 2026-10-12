@@ -17,6 +17,7 @@ class MaintenanceTests(unittest.TestCase):
         engine, logger = Mock(), Mock()
         maintain_loaded_tables(engine, [], logger)
         engine.connect.assert_not_called()
+        self.assertEqual(logger.info.call_args.kwargs['table'], 'maintenance')
 
     def test_autocommit_parameters_and_deferred_error(self):
         engine, logger, connection, cursor = Mock(), Mock(), Mock(), Mock()
@@ -32,6 +33,7 @@ class MaintenanceTests(unittest.TestCase):
                          'EXEC dbo.run_daily_maintenance @TablesJson=?;')
         self.assertEqual(connection.exec_driver_sql.call_args.args[1], ('["items", "sales_orders"]',))
         logger.failure.assert_called_once()
+        self.assertEqual(logger.failure.call_args.kwargs['table'], 'maintenance')
         logger.success.assert_not_called()
 
     def test_success_consumes_results(self):
@@ -44,6 +46,7 @@ class MaintenanceTests(unittest.TestCase):
         maintain_loaded_tables(engine, ['items'], logger)
         self.assertEqual(cursor.fetchall.call_count, 2)
         logger.success.assert_called_once()
+        self.assertEqual(logger.success.call_args.kwargs['table'], 'maintenance')
 
     def test_daily_script_excludes_failed_loads_and_includes_image_tables(self):
         with ExitStack() as stack:

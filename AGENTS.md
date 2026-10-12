@@ -78,3 +78,11 @@ as production-critical.
 - `[portal].[report_bookmarks]` (schema version 2, `sql/migrations/20260925_add_portal_report_bookmarks.sql`) holds each person's saved report views; the portal validates filter_json before saving. Record each portal migration in `[portal].[schema_versions]`.
 - `[portal].[user_preferences]` and `[portal].[settings]` (schema version 3, `sql/migrations/20261001_add_portal_user_preferences.sql`) hold each person's own portal settings and profile picture, and the workspace settings an administrator chooses (the default theme). No new grant is needed (`shiner_reports` has DML on SCHEMA::portal). The portal runs with standard settings until the migration has been run.
 
+
+## Item thumbnails
+
+- `scripts/make_item_thumbnails.py` (logic in `shinerutils/updates/item_thumbnails.py`) copies new NAS thumbnails to `\\SHINERSQL18\001 Master Thumbnail Images`, makes missing thumbnails from Item Docs photos and adds them to the catalogue as source `SQL18_THUMBNAIL` through `dbo.merge_item_thumbnail_locations`. Built 12 October 2026; see `documents/item_image_sources.md`.
+- User decisions (12 Oct 2026): SQL18 is its own image source and the NAS rows stay; "not blocked" is Ltd or BV unblocked (never the LLC flag), plus blocked items sold in the last month; network photos only, no SharePoint downloads; each run also copies new NAS thumbnails. Generated thumbnails are not uploaded to SharePoint.
+- The script never deletes, never writes to the NAS or Item Docs, and never replaces a marketing thumbnail with a generated one. Keep it that way. `--dry-run` and `--output-dir` write nothing to the server folder or the database.
+- List folders with `scan_pictures` (os.scandir), not one stat per file: over the network the per-file version took more than ten minutes for 21,000 files.
+- Deployment order: the constraint migration `20261012_add_sql18_thumbnail_source.sql` and the procedure first, then the Python. The morning refresh fails (keeping the previous rows) if it scans the SQL18 folder before the constraint allows the new source.

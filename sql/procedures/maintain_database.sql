@@ -124,7 +124,7 @@ BEGIN
             END;
             SET @action_started=SYSUTCDATETIME();
             INSERT dbo.db_log ([timestamp],duration_seconds,[level],[table],[action],[message])
-            SELECT SYSDATETIME(),0,N'INFO',LEFT(table_name,30),N'database maintenance: '+action,
+            SELECT SYSDATETIME(),0,N'INFO',N'maintenance',N'database maintenance: '+action,
                 (SELECT @run AS run_id,@Mode AS mode,N'dbo' AS schema_name,
                     table_name,target_name,command,page_count,
                     fragmentation AS fragmentation_before,density AS density_before,

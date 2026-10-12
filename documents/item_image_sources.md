@@ -126,3 +126,41 @@ Upload missing files and then rebuild the SQL image catalogue:
 ```powershell
 & "C:\Users\leo.pickard\src\data_control\venv\Scripts\python.exe" "C:\Users\leo.pickard\src\data_control\scripts\run_update.py" item_images
 ```
+
+## Thumbnails made from product photos (12 October 2026)
+
+`scripts/make_item_thumbnails.py` keeps the thumbnail folder on SHINERSQL18
+(`\\SHINERSQL18\001 Master Thumbnail Images`, setting
+`IMAGE_SQL18_THUMBNAIL_PATH`) filled. Each run:
+
+1. Copies thumbnails that are new or changed in marketing's NAS folder to the
+   SQL18 folder (same name, modified time kept). Nothing on the NAS changes. A
+   marketing thumbnail replaces a generated one of the same name.
+2. Makes `<item>_THUMB.jpg` (450 x 450, white background, JPEG) from the first
+   Item Docs photo of each eligible item that has no thumbnail in the SQL18
+   folder. A generated thumbnail is made again when its photo is newer.
+3. Adds the files it wrote to the catalogue through
+   `dbo.merge_item_thumbnail_locations` (source `SQL18_THUMBNAIL`).
+
+Eligible items: not placeholders, and unblocked in Shiner Ltd or Shiner B.V,
+or sold in the last month (the LLC flag is not used: it is unblocked for
+nearly every item). Photos come from the `NAS_ITEM_DOCS` rows of the
+catalogue only; SharePoint is not read. Nothing is deleted, and generated
+thumbnails are not uploaded to the SharePoint `BC_Images` library.
+
+The morning refresh scans the SQL18 folder as a fifth source
+(`SQL18_THUMBNAIL`), so the rows survive its daily rebuild. The NAS rows
+(`NAS_THUMBNAIL`) are unchanged. `sql/migrations/20261012_add_sql18_thumbnail_source.sql`
+must be run before the first refresh with this code, or the refresh fails.
+
+```powershell
+python scripts\make_item_thumbnails.py --dry-run                       # counts only, writes nothing
+python scripts\make_item_thumbnails.py --limit 25 --output-dir C:\Temp\trial   # trial: files to another folder only
+python scripts\make_item_thumbnails.py                                 # the real run
+python -W ignore tools\test_item_thumbnails.py                         # offline checks
+```
+
+SQL Server Agent job: `sql/database/agent_job_item_thumbnails.sql` (created
+disabled; set its two paths first). Measured from a desktop PC on 12 October
+2026: a run with nothing to do takes about 10 seconds, and thumbnails are made
+at about 25 a second (2,589 were missing).

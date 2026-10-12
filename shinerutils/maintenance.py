@@ -11,7 +11,7 @@ def maintain_loaded_tables(
     engine: Engine, tables: list[str], logger: DatabaseLogger
 ) -> None:
     if not tables:
-        logger.info(action="database maintenance", message="No successful loads to maintain.")
+        logger.info(table="maintenance", action="database maintenance", message="No successful loads to maintain.")
         return
     try:
         with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
@@ -29,10 +29,11 @@ def maintain_loaded_tables(
                         break
             result.close()
         logger.success(
+            table="maintenance",
             action="database maintenance",
             message="Statistics maintenance and the scheduled index check completed. "
             "See dbo.db_log for individual actions.",
         )
     except Exception as exc:
-        logger.failure(action="database maintenance", message=str(exc))
+        logger.failure(table="maintenance", action="database maintenance", message=str(exc))
         raise

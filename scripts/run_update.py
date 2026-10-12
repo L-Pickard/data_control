@@ -32,7 +32,7 @@ class UpdateDefinition:
 UPDATES: dict[str, UpdateDefinition] = {
     "brands": UpdateDefinition("update_brands_table", ("sql02", "warehouse")),
     "countries": UpdateDefinition(
-        "update_countries_table", ("sql04", "sql05", "warehouse")
+        "update_countries_table", ("sql02", "sql04", "warehouse")
     ),
     "customers": UpdateDefinition(
         "update_customers_table", ("sql02", "sql04", "warehouse")
@@ -88,7 +88,6 @@ def create_engines(get_engine: Callable[[str, str], Engine]) -> dict[str, Engine
     return {
         "sql02": get_engine("shinersql18", "NAV_LIVE"),
         "sql04": get_engine("shinersql04", "BC_LIVE_USA"),
-        "sql05": get_engine("shinersql05", "BC_UAT_UK"),
         "finance": get_engine("shinersql18", "Finance"),
         "warehouse": get_engine("shinersql18", "data_control"),
     }

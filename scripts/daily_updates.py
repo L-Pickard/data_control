@@ -26,6 +26,7 @@ def main() -> None:
     )
     from shinerutils.logging import DatabaseLogger
     from shinerutils.maintenance import maintain_loaded_tables
+    from shinerutils.updates.item_thumbnails import make_missing_item_thumbnails
 
     # initialize new instance of logger class
 
@@ -33,9 +34,8 @@ def main() -> None:
 
     # initialize new instances of sqlalchemy engine class to connect to different servers/databases
 
-    engine_sql02 = get_sqlalchemy_engine("shinersql18", "NAV_LIVE")
+    engine_sql02 = get_sqlalchemy_engine("shinersql02", "NAV_LIVE")
     engine_sql04 = get_sqlalchemy_engine("shinersql04", "BC_LIVE_USA")
-    engine_sql05 = get_sqlalchemy_engine("shinersql05", "BC_UAT_UK")
     engine_sql18 = get_sqlalchemy_engine("shinersql18", "data_control")
 
     successful_tables: list[str] = []
@@ -78,7 +78,7 @@ def main() -> None:
         # execute function to update countries table and log wether it resulted in success or failure
 
         rows_affected = update_countries_table(
-            engine_sql04, engine_sql05, engine_sql18, logger
+            engine_sql02, engine_sql04, engine_sql18, logger
         )
 
         action = "update [data_control].[dbo].[countries] table"
@@ -340,6 +340,41 @@ def main() -> None:
                 rows=rows_affected,
             )
 
+        # Fill the SQL18 thumbnail folder now that the image tables hold today's photos: copies new marketing
+        # thumbnails from the NAS, makes the missing ones from product photos and adds each file it wrote to the
+        # image tables (dbo.merge_item_thumbnail_locations), so the tables are complete when this step ends.
+        # A failure here is logged and does not stop the rest of the update.
+
+        thumbnails = make_missing_item_thumbnails(engine_sql18, logger)
+
+        action = "make missing item thumbnails"
+
+        if thumbnails is None or thumbnails.catalogue_error is not None:
+
+            print("An error occurred making item thumbnails")
+
+            logger.failure(
+                table="item_thumbnails",
+                action=action,
+                message="item thumbnails were not made"
+                if thumbnails is None
+                else f"{thumbnails.files_written} thumbnail files written but not added to the image catalogue",
+            )
+        else:
+
+            print(
+                "item thumbnails have been made, files written: ",
+                thumbnails.files_written,
+            )
+            logger.success(
+                table="item_thumbnails",
+                action=action,
+                message=f"{thumbnails.copied} copied from the NAS, {thumbnails.generated} made, "
+                f"{thumbnails.regenerated} made again, {thumbnails.unreadable} photos unreadable; "
+                f"{thumbnails.catalogued} added to the image catalogue",
+                rows=thumbnails.files_written,
+            )
+
         rows_affected = update_item_packaging_table(engine_sql18, logger)
 
         action = "update [data_control].[dbo].[item_packaging] table"
@@ -530,7 +565,6 @@ def main() -> None:
 
         engine_sql02.dispose()
         engine_sql04.dispose()
-        engine_sql05.dispose()
         engine_sql18.dispose()
 
 

@@ -39,6 +39,7 @@ BEGIN
 				,N'SP_THUMBNAIL'
 				,N'NAS_ITEM_DOCS'
 				,N'NAS_THUMBNAIL'
+				,N'SQL18_THUMBNAIL'
 			))
 		,CONSTRAINT [CK_item_image_locations_location_type]
 			CHECK ([location_type] IN (N'WEB', N'UNC'))

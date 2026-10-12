@@ -7,11 +7,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 def main() -> None:
-    from shinerutils.logging import DatabaseLogger
     from shinerutils import (
         get_sqlalchemy_engine,
         update_sales_table,
     )
+    from shinerutils.logging import DatabaseLogger
 
     # initialize new instance of logger class
 
@@ -19,7 +19,7 @@ def main() -> None:
 
     # initialize new instances of sqlalchemy engine class to connect to different servers/databases
 
-    engine_sql02 = get_sqlalchemy_engine("shinersql18", "NAV_LIVE")
+    engine_sql02 = get_sqlalchemy_engine("shinersql02", "NAV_LIVE")
     engine_sql04 = get_sqlalchemy_engine("shinersql04", "BC_LIVE_USA")
     engine_sql18 = get_sqlalchemy_engine("shinersql18", "data_control")
 

@@ -97,6 +97,8 @@ UPDATE #control SET do_work=0;
 EXEC #maintain_database @Preview=1;
 IF (SELECT COUNT(*) FROM #db_log)<>@before THROW 51910, 'Preview wrote logs.', 1;
 GO
+IF EXISTS (SELECT 1 FROM #db_log WHERE [table] IS NULL OR [table]<>N'maintenance')
+    THROW 51911, 'Maintenance logs must use the maintenance table label.', 1;
 SELECT N'All maintenance logging and scheduling checks passed' AS result;
 '@
 $testFile = [System.IO.Path]::GetTempFileName()

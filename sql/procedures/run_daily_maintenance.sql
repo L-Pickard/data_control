@@ -37,6 +37,7 @@ BEGIN
             SET @message=(SELECT @completed AS completed_at_utc FOR JSON PATH,WITHOUT_ARRAY_WRAPPER);
             SET @duration=DATEDIFF_BIG(MICROSECOND,@started,@completed)/1000000.0;
             EXEC dbo.write_db_log @level=N'SUCCESS',
+                @table=N'maintenance',
                 @action=N'database maintenance: index check completed',
                 @message=@message,@duration_seconds=@duration;
             SELECT N'INDEXES_COMPLETED' AS schedule_status;
