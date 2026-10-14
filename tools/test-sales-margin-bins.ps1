@@ -1,7 +1,7 @@
 # Tests repository computed expressions on session-local tables.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$table = Get-Content (Join-Path $repoRoot 'sql/tables/sales.sql') -Raw
+$table = Get-Content (Join-Path $repoRoot 'sql/tables/dbo/sales.sql') -Raw
 $start = $table.IndexOf('CREATE TABLE [dbo].[sales]')
 $end = $table.IndexOf(',CONSTRAINT PK_sales', $start)
 $create = $table.Substring($start, $end - $start).TrimEnd() + ');'

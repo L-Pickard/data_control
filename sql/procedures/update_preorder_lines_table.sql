@@ -45,7 +45,7 @@ BEGIN
 
 			-- Empty and refill the table instead of dropping it. Dropping a table removes every permission granted on it,
 			-- so the portal's runtime login (shiner_reports) lost SELECT after each load and the Order Form Builder stopped
-			-- working (found 8 October 2026). The definition below matches sql/tables/preorder_lines.sql; change the table
+			-- working (found 8 October 2026). The definition below matches sql/tables/dbo/preorder_lines.sql; change the table
 			-- with a migration, not here.
 			IF OBJECT_ID(N'dbo.preorder_lines', N'U') IS NOT NULL
 				TRUNCATE TABLE [dbo].[preorder_lines];

@@ -1,5 +1,5 @@
 -- Least-privilege access for [shiner_reports] as the Shiner web portal's runtime SQL login.
--- Run after sql/migrations/20260925_create_portal_schema.sql. Safe to run again (GRANT is idempotent).
+-- Run after sql/database/schema_portal.sql and sql/tables/portal/*.sql. Safe to run again (GRANT is idempotent).
 -- Run as a db_owner Windows login (the codex_assistant helper cannot grant), e.g.:
 --   sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i sql/database/grants_shiner_reports_portal.sql
 -- Reads only the warehouse objects the portal's report and slicer SQL uses; reads and writes only [portal].
@@ -11,7 +11,7 @@ IF USER_ID(N'shiner_reports') IS NULL
 	THROW 51000, 'Database user shiner_reports is missing; run sql/database/users.sql first.', 1;
 
 IF SCHEMA_ID(N'portal') IS NULL
-	THROW 51000, 'Schema portal is missing; run sql/migrations/20260925_create_portal_schema.sql first.', 1;
+	THROW 51000, 'Schema portal is missing; run sql/database/schema_portal.sql first.', 1;
 
 GO
 

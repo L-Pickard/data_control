@@ -77,17 +77,9 @@ indexes. See [Microsoft's computed index requirements](https://learn.microsoft.c
 
 ## Deployment and verification
 
-For a database with the three legacy bins, run
-`sql/migrations/20260924_consolidate_sales_margin_bin.sql` through
-`tools/db-query.ps1` with a sufficient timeout. It rebuilds the table in a
-transaction to put the bin directly after quantity. It holds writes until
-commit, checks every original sales value and row count, and verifies each
-new bin equals the previous bin for the entity's currency. It also checks
-column metadata, indexes and foreign keys. An error rolls everything back.
-
-The earlier `20260924_add_sales_margin_bins.sql` and
-`20260924_widen_sales_doc_type.sql` files describe the preceding migrations.
-For a fresh empty database, `sql/tables/sales.sql` and
+The single-bin schema was deployed to shinersql18 in September 2026 (the
+one-off migrations have since been removed from the repository; they are in
+the git history). For a fresh empty database, `sql/tables/dbo/sales.sql` and
 `sql/views/sales_margin_bins.sql` define the final single-bin schema.
 Do not run the table fresh-create script on populated data: it drops the table.
 `doc_type` remains `nvarchar(5)`.
@@ -97,8 +89,3 @@ three entities using local fixtures. It also checks differing currency
 amounts, entity-only updates, unrelated currency changes, unknown entities,
 inserts, margin/sales updates, index maintenance and deletes.
 
-`sql/analysis/validate_sales_margin_bins.sql` checks the deployed table with
-a single copied row inside a rolled-back transaction, including five-character
-document types and currency selection after entity changes. It then checks the
-column position and compares an app aggregation with the source totals.
-It does not invoke the full sales ingestion job.

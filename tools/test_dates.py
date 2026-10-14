@@ -80,8 +80,7 @@ def main():
     print(f'All {len(rows)} source rows and {len(rows[0])} attributes validated.')
     columns = [COLUMN_RENAMES.get(c, c) for c in rows[0]]
     names = ','.join(f'[{c}]' for c in columns)
-    sql = ["USE data_control; SET XACT_ABORT ON;\n",
-           (ROOT / 'sql/migrations/20260917_correct_financial_dates.sql').read_text().replace('COMMIT TRANSACTION;', '')]
+    sql = ["USE data_control; SET XACT_ABORT ON;\nBEGIN TRANSACTION;\n"]
     sql.append(f'SELECT TOP (0) {names} INTO #expected FROM dbo.dates;\n')
     quote = lambda v: "'" + v.replace("'", "''") + "'"
     for offset in range(0, len(rows), 500):

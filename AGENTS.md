@@ -72,11 +72,11 @@ as production-critical.
 
 ## Portal schema
 
-- `[portal]` holds the Shiner web portal's own data (people by Windows SID, app-managed groups, report grants, audit). It was created on 25 September 2026 by `sql/migrations/20260925_create_portal_schema.sql`; table files are `sql/tables/portal_*.sql` and never drop (they hold access rights).
+- `[portal]` holds the Shiner web portal's own data (people by Windows SID, app-managed groups, report grants, audit). It was created on 25 September 2026; the schema is `sql/database/schema_portal.sql` and the table files are `sql/tables/portal/*.sql` and never drop (they hold access rights).
 - Schema ownership changes and GRANTs need a `db_owner` Windows login; the `codex_assistant` helper (db_ddladmin) cannot do them. Ask the user to run such scripts with `sqlcmd -S tcp:shinersql18 -d data_control -E -N -C -b -i <file>`.
 - `shiner_reports` is the portal's runtime SQL login: SELECT on the warehouse objects it reads, SELECT/INSERT/UPDATE/DELETE on `[portal]` (`sql/database/grants_shiner_reports_portal.sql`). Its password is never stored in this repo; reset it with `tools/reset-shiner-reports-password.ps1`.
-- `[portal].[report_bookmarks]` (schema version 2, `sql/migrations/20260925_add_portal_report_bookmarks.sql`) holds each person's saved report views; the portal validates filter_json before saving. Record each portal migration in `[portal].[schema_versions]`.
-- `[portal].[user_preferences]` and `[portal].[settings]` (schema version 3, `sql/migrations/20261001_add_portal_user_preferences.sql`) hold each person's own portal settings and profile picture, and the workspace settings an administrator chooses (the default theme). No new grant is needed (`shiner_reports` has DML on SCHEMA::portal). The portal runs with standard settings until the migration has been run.
+- `[portal].[report_bookmarks]` (schema version 2, `sql/tables/portal/report_bookmarks.sql`) holds each person's saved report views; the portal validates filter_json before saving. Record each portal schema change in `[portal].[schema_versions]`.
+- `[portal].[user_preferences]` and `[portal].[settings]` (schema version 3, `sql/tables/portal/user_preferences.sql` and `settings.sql`) hold each person's own portal settings and profile picture, and the workspace settings an administrator chooses (the default theme). No new grant is needed (`shiner_reports` has DML on SCHEMA::portal).
 
 
 ## Item thumbnails
@@ -85,4 +85,4 @@ as production-critical.
 - User decisions (12 Oct 2026): SQL18 is its own image source and the NAS rows stay; "not blocked" is Ltd or BV unblocked (never the LLC flag), plus blocked items sold in the last month; network photos only, no SharePoint downloads; each run also copies new NAS thumbnails. Generated thumbnails are not uploaded to SharePoint.
 - The script never deletes, never writes to the NAS or Item Docs, and never replaces a marketing thumbnail with a generated one. Keep it that way. `--dry-run` and `--output-dir` write nothing to the server folder or the database.
 - List folders with `scan_pictures` (os.scandir), not one stat per file: over the network the per-file version took more than ten minutes for 21,000 files.
-- Deployment order: the constraint migration `20261012_add_sql18_thumbnail_source.sql` and the procedure first, then the Python. The morning refresh fails (keeping the previous rows) if it scans the SQL18 folder before the constraint allows the new source.
+- Deployment order: the `SQL18_THUMBNAIL` source constraint (applied; now in `sql/tables/dbo/item_image_locations.sql`) and the procedure first, then the Python. The morning refresh fails (keeping the previous rows) if it scans the SQL18 folder before the constraint allows the new source.

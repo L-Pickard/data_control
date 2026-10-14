@@ -150,8 +150,9 @@ thumbnails are not uploaded to the SharePoint `BC_Images` library.
 
 The morning refresh scans the SQL18 folder as a fifth source
 (`SQL18_THUMBNAIL`), so the rows survive its daily rebuild. The NAS rows
-(`NAS_THUMBNAIL`) are unchanged. `sql/migrations/20261012_add_sql18_thumbnail_source.sql`
-must be run before the first refresh with this code, or the refresh fails.
+(`NAS_THUMBNAIL`) are unchanged. The `CK_item_image_locations_source_code` constraint must allow
+`SQL18_THUMBNAIL` (applied on shinersql18 on 12 October 2026; defined in
+`sql/tables/dbo/item_image_locations.sql`), or the refresh fails.
 
 ```powershell
 python scripts\make_item_thumbnails.py --dry-run                       # counts only, writes nothing
