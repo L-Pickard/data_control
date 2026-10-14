@@ -26,7 +26,8 @@ IF EXISTS [dbo].[item_inventory_costs];
 					THEN 'POMONA'
 				ELSE NULL
 				END AS NVARCHAR(10)) PERSISTED
-		,[quantity] DECIMAL(38, 20) NOT NULL
+		,[first_receipt] DATE NULL
+		,[last_receipt] DATE NULL
 		,[currency] AS CAST(CASE [entity]
 				WHEN 'Shiner Ltd'
 					THEN 'GBP'
@@ -36,7 +37,9 @@ IF EXISTS [dbo].[item_inventory_costs];
 					THEN 'USD'
 				ELSE NULL
 				END AS NVARCHAR(10)) PERSISTED
+		,[quantity] DECIMAL(38, 20) NOT NULL
 		,[cost] DECIMAL(38, 20) NOT NULL
+
 		,CONSTRAINT [PK_item_inventory_costs] PRIMARY KEY CLUSTERED (
 			[entity]
 			,[item_id]

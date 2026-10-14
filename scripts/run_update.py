@@ -46,6 +46,9 @@ UPDATES: dict[str, UpdateDefinition] = {
         "update_inventory_table", ("sql02", "sql04", "warehouse")
     ),
     "item_images": UpdateDefinition("update_item_images_table", ("warehouse",)),
+    "item_inventory_costs": UpdateDefinition(
+        "update_item_inventory_costs_table", ("sql02", "sql04", "warehouse")
+    ),
     "item_packaging": UpdateDefinition("update_item_packaging_table", ("warehouse",)),
     "monthly_avg_xr": UpdateDefinition(
         "update_monthly_average_exchange_rates_table", ("finance", "warehouse")
@@ -86,7 +89,7 @@ def parse_args() -> argparse.Namespace:
 
 def create_engines(get_engine: Callable[[str, str], Engine]) -> dict[str, Engine]:
     return {
-        "sql02": get_engine("shinersql18", "NAV_LIVE"),
+        "sql02": get_engine("shinersql02", "NAV_LIVE"),
         "sql04": get_engine("shinersql04", "BC_LIVE_USA"),
         "finance": get_engine("shinersql18", "Finance"),
         "warehouse": get_engine("shinersql18", "data_control"),

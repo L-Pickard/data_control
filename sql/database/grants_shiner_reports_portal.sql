@@ -46,6 +46,10 @@ GRANT SELECT ON [dbo].[preorder_lines] TO [shiner_reports];
 -- Preorders report: dbo.preorders and dbo.exchange_rates (both granted above, for the last four weeks' average
 -- rates) and the monthly average exchange rates for the preorder ETA date.
 GRANT SELECT ON [dbo].[monthly_avg_xr] TO [shiner_reports];
+-- Inventory Cost report (14 October 2026): the cost of each company's stock by brand (with dbo.brands and
+-- dbo.exchange_rates above). The table is reloaded with DELETE and INSERT, which keeps this grant; re-running its
+-- table file (DROP TABLE) removes it, so run this line again after that.
+GRANT SELECT ON [dbo].[item_inventory_costs] TO [shiner_reports];
 -- The load log. "Data last updated" notes at the top of reports read when each table was last loaded successfully.
 -- The Database Log app (12 October 2026) shows every column, deletes old records (DELETE; the portal has its own
 -- permission for that and always keeps the newest SUCCESS record of each table and action) and writes one record
