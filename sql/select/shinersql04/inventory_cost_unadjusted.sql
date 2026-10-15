@@ -32,6 +32,20 @@ WHERE il.[Applied Entry to Adjust] = 1
 	AND il.[Location Code] = N'POMONA'
 	AND il.[Posting Date] >= @cut_off
 	AND il.[Posting Date] < @day_after
+	-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
+	-- so its entries cannot change it (user, 15 Oct 2026).
+	AND EXISTS (
+		SELECT 1
+
+		FROM [Shiner USA Master Setup$Item Ledger Entry$437dbf0e-84ff-417a-965d-ed2bb9650972] AS st
+
+		WHERE st.[Item No_] = il.[Item No_]
+			AND st.[Location Code] = N'POMONA'
+			AND st.[Drop Shipment] = 0
+			AND st.[Posting Date] < @day_after
+
+		HAVING SUM(st.[Quantity]) > 0
+		)
 
 ORDER BY [posting_date]
 	,[entry_no];

@@ -86,6 +86,7 @@ GRANT SELECT ON [finance].[inventory_cost_lines] TO [shiner_reports];
 GRANT EXECUTE ON [finance].[request_inventory_cost_check] TO [shiner_reports];
 GRANT EXECUTE ON [finance].[request_inventory_cost] TO [shiner_reports];
 GRANT EXECUTE ON [finance].[delete_inventory_cost] TO [shiner_reports];
+GRANT EXECUTE ON [finance].[delete_inventory_cost_check] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
@@ -93,7 +94,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
 GO
 
 -- No database-wide EXECUTE: some procedures change data. The portal needs EXECUTE only on dbo.fnc_convert_currency
--- the seven margin-rule procedures and the three inventory cost dataset procedures (granted above). users.sql used
+-- the seven margin-rule procedures and the four inventory cost dataset procedures (granted above). users.sql used
 -- to grant EXECUTE on the whole database; this removes it
 -- (the object-level grant above is kept). Revoked 1 October 2026 at the user's request.
 REVOKE EXECUTE TO [shiner_reports];

@@ -1,7 +1,7 @@
 -- Inventory cost check (Shiner Ltd BRISTOL, Shiner B.V 3PL): the item ledger entries still flagged "Applied Entry to
 -- Adjust" (FIFO: Adjust Cost - Item Entries has not reached them), for finance.inventory_cost_unadjusted (the loader adds
--- check_id). A WARNING list, not a blocker, scoped to the dataset location and entries posted in the 12 months up to
--- the as-of date (user decisions, 15 Oct 2026); the same entries as unadjusted_entries in inventory_cost_checks.sql.
+-- check_id). A WARNING list, not a blocker, scoped to the dataset location, entries posted in the 12 months up to the
+-- as-of date and items with stock there at that date (user decisions, 15 Oct 2026); the same entries as unadjusted_entries in inventory_cost_checks.sql.
 -- Parameter: ? = the as-of date. remaining_quantity is the open quantity now.
 DECLARE @as_of AS DATETIME = CAST(? AS DATETIME);
 DECLARE @day_after AS DATETIME = DATEADD(DAY, 1, @as_of);
@@ -34,6 +34,20 @@ WHERE il.[Applied Entry to Adjust] = 1
 	AND il.[Location Code] = N'BRISTOL'
 	AND il.[Posting Date] >= @cut_off
 	AND il.[Posting Date] < @day_after
+	-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
+	-- so its entries cannot change it (user, 15 Oct 2026).
+	AND EXISTS (
+		SELECT 1
+
+		FROM [Shiner$Item Ledger Entry] AS st
+
+		WHERE st.[Item No_] = il.[Item No_]
+			AND st.[Location Code] = N'BRISTOL'
+			AND st.[Drop Shipment] = 0
+			AND st.[Posting Date] < @day_after
+
+		HAVING SUM(st.[Quantity]) > 0
+		)
 
 
 UNION ALL
@@ -65,6 +79,20 @@ WHERE il.[Applied Entry to Adjust] = 1
 	AND il.[Location Code] = N'3PL'
 	AND il.[Posting Date] >= @cut_off
 	AND il.[Posting Date] < @day_after
+	-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
+	-- so its entries cannot change it (user, 15 Oct 2026).
+	AND EXISTS (
+		SELECT 1
+
+		FROM [Shiner BV$Item Ledger Entry] AS st
+
+		WHERE st.[Item No_] = il.[Item No_]
+			AND st.[Location Code] = N'3PL'
+			AND st.[Drop Shipment] = 0
+			AND st.[Posting Date] < @day_after
+
+		HAVING SUM(st.[Quantity]) > 0
+		)
 
 ORDER BY [entity]
 	,[posting_date]

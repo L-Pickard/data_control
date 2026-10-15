@@ -3,8 +3,8 @@
 -- (15 Oct 2026). Parameter: ? = the as-of date.
 --   unadjusted_entries  item ledger entries still flagged "Applied Entry to Adjust" (FIFO: cost adjustment has not
 --                       reached them yet), as the flag is now. A WARNING, not a blocker, scoped to what can affect
---                       the dataset (user decisions, 15 Oct 2026): the company's dataset location and entries posted
---                       in the 12 months up to the as-of date (NAV keeps a few flagged every month, back to 2013).
+--                       the dataset (user decisions, 15 Oct 2026): the company's dataset location, entries posted
+--                       in the 12 months up to the as-of date and items with stock there at that date (NAV keeps a few flagged every month, back to 2013).
 --                       inventory_cost_unadjusted.sql lists the same entries.
 --   unposted_entries    value entries posted on or before the date, whole company, whose actual cost differs from the
 --                       cost posted to the G/L (Post Inventory Cost to G/L runs per company). The only blocker.
@@ -22,6 +22,20 @@ SELECT N'Shiner Ltd' AS [entity]
 			AND il.[Location Code] = N'BRISTOL'
 			AND il.[Posting Date] >= @cut_off
 			AND il.[Posting Date] < @day_after
+			-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
+			-- so its entries cannot change it (user, 15 Oct 2026).
+			AND EXISTS (
+				SELECT 1
+
+				FROM [Shiner$Item Ledger Entry] AS st
+
+				WHERE st.[Item No_] = il.[Item No_]
+					AND st.[Location Code] = N'BRISTOL'
+					AND st.[Drop Shipment] = 0
+					AND st.[Posting Date] < @day_after
+
+				HAVING SUM(st.[Quantity]) > 0
+				)
 		) AS [unadjusted_entries]
 	,(
 		SELECT COUNT(*)
@@ -45,6 +59,20 @@ SELECT N'Shiner B.V' AS [entity]
 			AND il.[Location Code] = N'3PL'
 			AND il.[Posting Date] >= @cut_off
 			AND il.[Posting Date] < @day_after
+			-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
+			-- so its entries cannot change it (user, 15 Oct 2026).
+			AND EXISTS (
+				SELECT 1
+
+				FROM [Shiner BV$Item Ledger Entry] AS st
+
+				WHERE st.[Item No_] = il.[Item No_]
+					AND st.[Location Code] = N'3PL'
+					AND st.[Drop Shipment] = 0
+					AND st.[Posting Date] < @day_after
+
+				HAVING SUM(st.[Quantity]) > 0
+				)
 		) AS [unadjusted_entries]
 	,(
 		SELECT COUNT(*)
