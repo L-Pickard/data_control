@@ -8,9 +8,12 @@
 -- and it MUST be run again after any change to start_inventory_cost_job (ALTER removes the signature): each run drops
 -- the old certificate, its login and user, and signs again with a new one.
 --
--- Test afterwards (starts the job once; with nothing queued it does nothing):
---   EXECUTE AS LOGIN = N'shiner_reports'; DECLARE @r INT; EXEC @r = data_control.finance.start_inventory_cost_job; SELECT @r AS result; REVERT;
--- result 0 = started (22022 = it was already running). Any other number: check the job history and this script.
+-- Test afterwards AS THE PORTAL DOES: shiner_reports has no EXECUTE on start_inventory_cost_job itself (by design); it
+-- reaches it only through the request procedures (ownership chaining). This queues a real check for the date:
+--   EXECUTE AS LOGIN = N'shiner_reports';
+--   EXEC data_control.finance.request_inventory_cost_check @as_of_date = '2026-09-30', @requested_by_id = N'signing-test', @requested_by = N'Signing test';
+--   REVERT;
+-- "The check has started" = signing works; "queued ... within the hour" = the start was refused (check the job history).
 -- Then re-run sql/database/agent_job_inventory_cost.sql, which keeps only an hourly backstop schedule.
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
