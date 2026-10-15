@@ -19,15 +19,19 @@ AS
 Project:  data_control Data Warehouse
 Language: TSQL
 Author:   Leo Pickard
-Version:  1.0
+Version:  1.1
 Date:     15/10/2026
 =================================================================================================================================================
 Queues an inventory cost check for an as-of date. Called by the Shiner Reports portal (Inventory Datasets app); the
 portal passes the signed-in person's id (Windows SID) and name, never anything typed by them.
 
-The check itself is run by the inventory cost job (scripts/run_inventory_cost.py, a SQL Agent job every minute),
-which claims the row (claim_inventory_cost_request), reads NAV and completes it (complete_inventory_cost_check). The
-portal follows finance.inventory_cost_checks for the result.
+The check itself is run by the SQL Agent job inventory_cost_requests (scripts/run_inventory_cost.py), which this
+procedure starts at once (start_inventory_cost_job, signed); the job claims the row (claim_inventory_cost_request),
+reads NAV and completes it (complete_inventory_cost_check). The portal follows finance.inventory_cost_checks.
+
+Old checks are cleared up here (user decision, 15 October 2026): a complete or failed check that finished more than
+30 days ago and that no dataset was made from is deleted with its warning lists, recorded in db_log. Checks behind a
+dataset are kept, so a dataset's warnings can always be seen.
 
 Refuses an as-of date in the future, and a second check for a date that already has one queued or running.
 Returns one row: outcome (ok or refused), message and check_id.
@@ -45,6 +49,38 @@ BEGIN
 		THROW 50121, 'The @requested_by_id and @requested_by parameters cannot be blank.', 1;
 
 	DECLARE @check_id INT;
+	DECLARE @started INT;
+	DECLARE @purged INT;
+	DECLARE @purge_message NVARCHAR(400);
+
+	DELETE ck
+
+	FROM [finance].[inventory_cost_checks] AS ck
+
+	WHERE ck.[status] IN (N'complete', N'failed')
+		AND ck.[completed_at] < DATEADD(DAY, - 30, SYSDATETIME())
+		AND NOT EXISTS (
+			SELECT 1
+
+			FROM [finance].[inventory_cost] AS ic
+
+			WHERE ic.[check_id] = ck.[check_id]
+			);
+
+	SET @purged = @@ROWCOUNT;
+
+	IF @purged > 0
+	BEGIN
+		SET @purge_message = CONCAT(@purged, N' inventory cost checks finished more than 30 days ago and not used by any dataset were removed with their warning lists.');
+
+		EXEC [dbo].[write_db_log]
+			 @level = N'INFO'
+			,@table = N'inventory_cost'
+			,@rows = @purged
+			,@action = N'remove old inventory cost checks'
+			,@message = @purge_message;
+
+	END;
 
 	IF @as_of_date IS NULL
 		OR @as_of_date > CAST(SYSDATETIME() AS DATE)
@@ -89,8 +125,14 @@ BEGIN
 
 	SET @check_id = CAST(SCOPE_IDENTITY() AS INT);
 
+	EXEC @started = [finance].[start_inventory_cost_job];
+
 	SELECT N'ok' AS [outcome]
-		,N'The check has been queued. It usually starts within a minute and takes a few minutes.' AS [message]
+		,CASE
+			WHEN @started IN (0, 22022)
+				THEN N'The check has started. It usually takes a few minutes.'
+			ELSE N'The check has been queued. It will start within the hour.'
+			END AS [message]
 		,@check_id AS [check_id];
 END;
 

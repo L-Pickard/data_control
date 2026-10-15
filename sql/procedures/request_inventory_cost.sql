@@ -31,7 +31,7 @@ AS
 Project:  data_control Data Warehouse
 Language: TSQL
 Author:   Leo Pickard
-Version:  1.0
+Version:  1.1
 Date:     15/10/2026
 =================================================================================================================================================
 Queues a new inventory cost dataset (finance.inventory_cost header, status 'requested'). Called by the Shiner Reports
@@ -44,8 +44,8 @@ The dataset takes its as-of date from the check. The check must be complete and 
 post to the G/L) and the latest completed check for its date, so a newer result always wins. Receipts not invoiced
 and entries not adjusted are warnings only (user decisions, 15 October 2026).
 
-The inventory cost job (scripts/run_inventory_cost.py) then reads NAV into finance.inventory_cost_staging and calls
-build_inventory_cost. Returns one row: outcome (ok or refused), message and dataset_id.
+The SQL Agent job inventory_cost_requests (scripts/run_inventory_cost.py), started at once by this procedure
+(start_inventory_cost_job, signed), then reads NAV into finance.inventory_cost_staging and calls build_inventory_cost. Returns one row: outcome (ok or refused), message and dataset_id.
 ===============================================================================================================================================*/
 BEGIN
 	SET NOCOUNT ON;
@@ -66,6 +66,7 @@ BEGIN
 	DECLARE @status NVARCHAR(20);
 	DECLARE @is_passed BIT;
 	DECLARE @dataset_id INT;
+	DECLARE @started INT;
 
 	SELECT @as_of_date = ck.[as_of_date]
 		,@status = ck.[status]
@@ -199,8 +200,14 @@ BEGIN
 
 	END CATCH;
 
+	EXEC @started = [finance].[start_inventory_cost_job];
+
 	SELECT N'ok' AS [outcome]
-		,N'The dataset has been queued. It usually starts within a minute and takes a few minutes.' AS [message]
+		,CASE
+			WHEN @started IN (0, 22022)
+				THEN N'The dataset has started. It usually takes a few minutes.'
+			ELSE N'The dataset has been queued. It will start within the hour.'
+			END AS [message]
 		,@dataset_id AS [dataset_id];
 END;
 
