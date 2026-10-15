@@ -56,6 +56,11 @@ from .updates.items import update_items_table
 from .updates.item_packaging import update_item_packaging_table
 from .updates.inventory import update_inventory_table
 from .updates.item_inventory_costs import update_item_inventory_costs_table
+from .updates.inventory_cost import (
+    process_inventory_cost_requests,
+    run_inventory_cost_check,
+    run_inventory_cost_dataset,
+)
 from .updates.item_images import (
     sync_item_images_to_sharepoint,
     update_item_images_table,
@@ -130,6 +135,9 @@ __all__ = [
     "update_items_table",
     "update_inventory_table",
     "update_item_inventory_costs_table",
+    "process_inventory_cost_requests",
+    "run_inventory_cost_check",
+    "run_inventory_cost_dataset",
     "update_item_images_table",
     "update_item_packaging_table",
     "update_purchase_orders_table",

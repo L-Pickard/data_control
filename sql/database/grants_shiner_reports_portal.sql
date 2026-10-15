@@ -73,6 +73,19 @@ GRANT EXECUTE ON [dbo].[delete_exclusion_rule] TO [shiner_reports];
 GRANT EXECUTE ON [dbo].[add_deduction_rule] TO [shiner_reports];
 GRANT EXECUTE ON [dbo].[delete_deduction_rule] TO [shiner_reports];
 GRANT EXECUTE ON [dbo].[run_margin_rule_recalculation] TO [shiner_reports];
+-- Inventory Datasets app (15 October 2026, NOT yet run; run sql/database/schema_finance.sql first). Per-table grants, not
+-- SCHEMA::[finance], so finance tables added later are not readable by the portal until granted. It reads the checks,
+-- their warning lists and the datasets, and only queues or deletes through the procedures below (EXECUTE through
+-- ownership chaining, as above: [finance] is owned by [dbo]). It cannot start jobs: the inventory cost SQL Agent job
+-- (scripts/run_inventory_cost.py, every minute) picks the requests up. Deploy the table and procedure files first.
+GRANT SELECT ON [finance].[inventory_cost_checks] TO [shiner_reports];
+GRANT SELECT ON [finance].[inventory_cost_receipts] TO [shiner_reports];
+GRANT SELECT ON [finance].[inventory_cost_unadjusted] TO [shiner_reports];
+GRANT SELECT ON [finance].[inventory_cost] TO [shiner_reports];
+GRANT SELECT ON [finance].[inventory_cost_lines] TO [shiner_reports];
+GRANT EXECUTE ON [finance].[request_inventory_cost_check] TO [shiner_reports];
+GRANT EXECUTE ON [finance].[request_inventory_cost] TO [shiner_reports];
+GRANT EXECUTE ON [finance].[delete_inventory_cost] TO [shiner_reports];
 
 -- The portal's own data: people, groups, grants, audit (and later bookmarks).
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
@@ -80,7 +93,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[portal] TO [shiner_reports];
 GO
 
 -- No database-wide EXECUTE: some procedures change data. The portal needs EXECUTE only on dbo.fnc_convert_currency
--- and the seven margin-rule procedures (granted above). users.sql used to grant EXECUTE on the whole database; this removes it
+-- the seven margin-rule procedures and the three inventory cost dataset procedures (granted above). users.sql used
+-- to grant EXECUTE on the whole database; this removes it
 -- (the object-level grant above is kept). Revoked 1 October 2026 at the user's request.
 REVOKE EXECUTE TO [shiner_reports];
 
