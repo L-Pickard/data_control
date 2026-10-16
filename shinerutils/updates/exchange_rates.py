@@ -100,7 +100,7 @@ def update_exchange_rates_table(
 
     action = "recreate sql18 exchange_rates table"
 
-    table_definition_path = PROJECT_ROOT / "sql" / "tables" / "exchange_rates.sql"
+    table_definition_path = PROJECT_ROOT / "sql" / "tables" / "dbo" / "exchange_rates.sql"
 
     try:
         table_definition_sql = table_definition_path.read_text(encoding="utf-8")
