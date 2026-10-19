@@ -81,7 +81,7 @@ GRANT EXECUTE ON [dbo].[run_margin_rule_recalculation] TO [shiner_reports];
 GRANT SELECT ON [finance].[inventory_cost_checks] TO [shiner_reports];
 GRANT SELECT ON [finance].[inventory_cost_receipts] TO [shiner_reports];
 GRANT SELECT ON [finance].[inventory_cost_unadjusted] TO [shiner_reports];
-GRANT SELECT ON [finance].[inventory_cost] TO [shiner_reports];
+GRANT SELECT ON [finance].[inventory_cost_headers] TO [shiner_reports];
 GRANT SELECT ON [finance].[inventory_cost_lines] TO [shiner_reports];
 GRANT EXECUTE ON [finance].[request_inventory_cost_check] TO [shiner_reports];
 GRANT EXECUTE ON [finance].[request_inventory_cost] TO [shiner_reports];

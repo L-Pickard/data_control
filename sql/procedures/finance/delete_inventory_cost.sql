@@ -21,12 +21,12 @@ Author:   Leo Pickard
 Version:  1.0
 Date:     15/10/2026
 =================================================================================================================================================
-Permanently deletes an inventory cost dataset (user decision, 15 October 2026): the finance.inventory_cost header and
+Permanently deletes an inventory cost dataset (user decision, 15 October 2026): the finance.inventory_cost_headers header and
 its finance.inventory_cost_lines (ON DELETE CASCADE), in one transaction with a db_log record of what was deleted and by
 whom. Called by the Shiner Reports portal (Inventory Datasets app, which has its own permission for deleting); the
 portal passes the signed-in person's name.
 
-A queued, complete or failed dataset can be deleted; one that is loading (being built by the job) is refused. Its
+A starting, complete or failed dataset can be deleted; one that is loading (being built by the job) is refused. Its
 check stays (other datasets may use it). Returns one row: outcome (ok or refused) and message.
 ===============================================================================================================================================*/
 BEGIN
@@ -59,7 +59,7 @@ BEGIN
 		,@line_count = ic.[line_count]
 		,@total_gbp = ic.[total_gbp]
 
-	FROM [finance].[inventory_cost] AS ic WITH (UPDLOCK, HOLDLOCK)
+	FROM [finance].[inventory_cost_headers] AS ic WITH (UPDLOCK, HOLDLOCK)
 
 	WHERE ic.[dataset_id] = @dataset_id;
 
@@ -81,7 +81,7 @@ BEGIN
 
 	DELETE
 
-	FROM [finance].[inventory_cost]
+	FROM [finance].[inventory_cost_headers]
 
 	WHERE [dataset_id] = @dataset_id;
 

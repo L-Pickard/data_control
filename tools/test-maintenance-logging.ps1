@@ -15,7 +15,7 @@ INSERT #control VALUES (0,1);
 GO
 '@)
 foreach ($name in @('write_db_log','maintain_database','run_daily_maintenance')) {
-    $body = Get-Content -LiteralPath (Join-Path $repoRoot "sql/procedures/$name.sql") -Raw
+    $body = Get-Content -LiteralPath (Join-Path $repoRoot "sql/procedures/dbo/$name.sql") -Raw
     $body = $body.Substring($body.IndexOf('CREATE OR ALTER PROCEDURE'))
     $body = $body -replace '(?im)^GO\s*$', ''
     $body = $body.Replace('CREATE OR ALTER PROCEDURE','CREATE PROCEDURE')

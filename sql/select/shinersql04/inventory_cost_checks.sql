@@ -1,35 +1,12 @@
--- Inventory cost check (Shiner LLC): the counts of entries for finance.inventory_cost_checks.
--- Same rules and columns as shinersql02/inventory_cost_checks.sql. Validated read-only on shinersql04 (15 Oct 2026).
--- Parameter: ? = the as-of date.
+-- Read-only inventory source query, scoped to selected entities and locations.
+-- Parameters: as-of date, then XML scope (SQL02 supports XML, not OPENJSON).
 DECLARE @as_of AS DATETIME = CAST(? AS DATETIME);
+DECLARE @scope XML = CAST(? AS XML);
+DECLARE @llc_enabled BIT = @scope.exist('/scope/entity[@name="Shiner LLC"]');
+DECLARE @llc_all BIT = @scope.exist('/scope/entity[@name="Shiner LLC" and @all="1"]');
 DECLARE @day_after AS DATETIME = DATEADD(DAY, 1, @as_of);
-DECLARE @cut_off AS DATETIME = DATEADD(MONTH, - 12, @day_after);
 
 SELECT N'Shiner LLC' AS [entity]
-	,(
-		SELECT COUNT(*)
-
-		FROM [Shiner USA Master Setup$Item Ledger Entry$437dbf0e-84ff-417a-965d-ed2bb9650972] AS il
-
-		WHERE il.[Applied Entry to Adjust] = 1
-			AND il.[Location Code] = N'POMONA'
-			AND il.[Posting Date] >= @cut_off
-			AND il.[Posting Date] < @day_after
-			-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
-			-- so its entries cannot change it (user, 15 Oct 2026).
-			AND EXISTS (
-				SELECT 1
-
-				FROM [Shiner USA Master Setup$Item Ledger Entry$437dbf0e-84ff-417a-965d-ed2bb9650972] AS st
-
-				WHERE st.[Item No_] = il.[Item No_]
-					AND st.[Location Code] = N'POMONA'
-					AND st.[Drop Shipment] = 0
-					AND st.[Posting Date] < @day_after
-
-				HAVING SUM(st.[Quantity]) > 0
-				)
-		) AS [unadjusted_entries]
 	,(
 		SELECT COUNT(*)
 
@@ -37,4 +14,7 @@ SELECT N'Shiner LLC' AS [entity]
 
 		WHERE ve.[Cost Amount (Actual)] <> ve.[Cost Posted to G_L]
 			AND ve.[Posting Date] < @day_after
-		) AS [unposted_entries];
+            AND (@llc_enabled=1 AND (@llc_all=1 OR ve.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner LLC"]/location') AS lc(n))))
+		) AS [unposted_entries]
+WHERE @scope.exist('/scope/entity[@name="Shiner LLC"]') = 1
+OPTION (RECOMPILE, MAXDOP 1);

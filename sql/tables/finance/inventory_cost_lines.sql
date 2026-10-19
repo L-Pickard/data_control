@@ -10,9 +10,9 @@ SET QUOTED_IDENTIFIER ON
 
 GO
 
--- Inventory cost dataset lines: the facts of each dataset (finance.inventory_cost), one row per company and item
+-- Inventory cost dataset lines: the facts of each dataset (finance.inventory_cost_headers), one row per company, location and item
 -- with stock at the end of the dataset's as-of date, written once by the build procedure from
--- finance.inventory_cost_staging and never changed afterwards. The Inventory Cost report reads these lines (and
+-- the worker's parameterised JSON rows and never changed afterwards. The Inventory Cost report reads these lines (and
 -- joins the live dbo.items and dbo.brands for names, categories and groups); it no longer reads
 -- dbo.item_inventory_costs.
 --   location_code, currency_code  stored, not computed, so a dataset keeps what applied when it was made
@@ -48,8 +48,8 @@ BEGIN
 		,[cost_usd] DECIMAL(38, 20) NOT NULL
 		,[first_receipt] DATE NULL
 		,[last_receipt] DATE NULL
-		,CONSTRAINT [PK_inventory_cost_lines] PRIMARY KEY CLUSTERED ([dataset_id], [entity], [item_id])
-		,CONSTRAINT [FK_inventory_cost_lines_dataset] FOREIGN KEY ([dataset_id]) REFERENCES [finance].[inventory_cost] ([dataset_id]) ON DELETE CASCADE
+		,CONSTRAINT [PK_inventory_cost_lines] PRIMARY KEY CLUSTERED ([dataset_id], [entity], [location_code], [item_id])
+		,CONSTRAINT [FK_inventory_cost_lines_dataset] FOREIGN KEY ([dataset_id]) REFERENCES [finance].[inventory_cost_headers] ([dataset_id]) ON DELETE CASCADE
 		,CONSTRAINT [FK_inventory_cost_lines_entities] FOREIGN KEY ([entity]) REFERENCES [dbo].[entities] ([entity])
 		,CONSTRAINT [FK_inventory_cost_lines_items] FOREIGN KEY ([item_id]) REFERENCES [dbo].[items] ([item_id])
 		,CONSTRAINT [FK_inventory_cost_lines_brands] FOREIGN KEY ([brand_id]) REFERENCES [dbo].[brands] ([brand_id])

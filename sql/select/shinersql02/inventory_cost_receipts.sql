@@ -1,18 +1,17 @@
--- Inventory cost check (Shiner Ltd BRISTOL, Shiner B.V 3PL): purchase receipt lines posted on or before the as-of
--- date whose quantity was not fully invoiced by the end of that date. Written for finance.inventory_cost_receipts (the
--- loader adds check_id). A WARNING list, not a blocker: the dataset includes their expected cost (user decision,
--- 15 Oct 2026). Validated read-only on shinersql02 (15 Oct 2026).
--- Parameter: ? = the as-of date. Everything posted before the day after it counts (NAV posting dates are midnight).
--- As at the date, not today: quantity_invoiced adds up only the invoiced quantity of value entries posted by the
--- date, so a receipt invoiced after the date still shows here (today's "Qty. Rcd. Not Invoiced" would hide it).
--- Undo Receipt corrections (Correction = 1) are left out. To check on first run: that an undone receipt line is
--- fully invoiced by NAV's undo (so it does not show), and the field names below on this NAV version.
+-- Read-only inventory source query, scoped to selected entities and locations.
+-- Parameters: as-of date, then XML scope (SQL02 supports XML, not OPENJSON).
 DECLARE @as_of AS DATETIME = CAST(? AS DATETIME);
+DECLARE @scope XML = CAST(? AS XML);
+DECLARE @ltd_enabled BIT = @scope.exist('/scope/entity[@name="Shiner Ltd"]');
+DECLARE @ltd_all BIT = @scope.exist('/scope/entity[@name="Shiner Ltd" and @all="1"]');
+DECLARE @bv_enabled BIT = @scope.exist('/scope/entity[@name="Shiner B.V"]');
+DECLARE @bv_all BIT = @scope.exist('/scope/entity[@name="Shiner B.V" and @all="1"]');
 DECLARE @day_after AS DATETIME = DATEADD(DAY, 1, @as_of);
 
 WITH receipts
 AS (
 	SELECT N'Shiner Ltd' AS [entity]
+		,il.[Location Code] AS [location_code]
 		,il.[Entry No_] AS [entry_no]
 		,il.[Document No_] AS [document_no]
 		,il.[Document Line No_] AS [document_line_no]
@@ -34,7 +33,7 @@ AS (
 		AND il.[Document Type] = 5
 		AND il.[Correction] = 0
 		AND il.[Drop Shipment] = 0
-		AND il.[Location Code] = N'BRISTOL'
+		AND (@ltd_enabled=1 AND (@ltd_all=1 OR il.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner Ltd"]/location') AS lc(n))))
 		AND il.[Quantity] > 0
 		AND il.[Posting Date] < @day_after
 
@@ -42,6 +41,7 @@ AS (
 	UNION ALL
 
 	SELECT N'Shiner B.V' AS [entity]
+		,il.[Location Code] AS [location_code]
 		,il.[Entry No_] AS [entry_no]
 		,il.[Document No_] AS [document_no]
 		,il.[Document Line No_] AS [document_line_no]
@@ -63,12 +63,13 @@ AS (
 		AND il.[Document Type] = 5
 		AND il.[Correction] = 0
 		AND il.[Drop Shipment] = 0
-		AND il.[Location Code] = N'3PL'
+		AND (@bv_enabled=1 AND (@bv_all=1 OR il.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner B.V"]/location') AS lc(n))))
 		AND il.[Quantity] > 0
 		AND il.[Posting Date] < @day_after
 	)
 
 SELECT rc.[entity]
+	,rc.[location_code]
 	,rc.[document_no]
 	,rc.[document_line_no]
 	,rl.[Order No_] AS [order_no]
@@ -109,6 +110,7 @@ WHERE rc.[entity] = N'Shiner Ltd'
 UNION ALL
 
 SELECT rc.[entity]
+	,rc.[location_code]
 	,rc.[document_no]
 	,rc.[document_line_no]
 	,rl.[Order No_] AS [order_no]
@@ -148,4 +150,5 @@ WHERE rc.[entity] = N'Shiner B.V'
 ORDER BY [entity]
 	,[vendor_id]
 	,[document_no]
-	,[document_line_no];
+	,[document_line_no]
+OPTION (RECOMPILE, MAXDOP 1);

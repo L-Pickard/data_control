@@ -12,7 +12,7 @@ GO
 
 -- Inventory cost dataset pre-checks: one row per check a finance user asks for in the portal (Inventory Datasets app)
 -- for an as-of date. The row is also the job's request: the portal's request procedure inserts it as 'requested' and
--- starts the SQL Agent job, which reads NAV for the three companies (Ltd BRISTOL, B.V 3PL, LLC POMONA), sets it to
+-- starts the SQL Agent job, which reads NAV for the selected entities and locations, sets it to
 -- 'running', writes the not-invoiced receipt lines to finance.inventory_cost_receipts and the flagged entries to
 -- finance.inventory_cost_unadjusted, and completes it with the three counts, all as at the end of as_of_date:
 --   uninvoiced_lines   purchase receipt lines posted on or before as_of_date whose quantity was not fully invoiced by
@@ -21,7 +21,7 @@ GO
 --   unadjusted_entries item ledger entries still flagged "Applied Entry to Adjust" (FIFO costing: Adjust Cost - Item
 --                      Entries has not reached them), at the dataset locations and posted in the 12 months up to
 --                      as_of_date
---   unposted_entries   value entries posted on or before as_of_date, any location, whose actual cost differs from
+--   unposted_entries   value entries posted on or before as_of_date, selected locations, whose actual cost differs from
 --                      the cost posted to the G/L (Post Inventory Cost to G/L has not finished for them)
 -- Only unposted_entries blocks (user decisions, 15 Oct 2026): a check passes (is_passed) when it completed with no
 -- unposted entries. Receipts not invoiced by the date are a warning, because the dataset includes their expected
@@ -36,6 +36,8 @@ BEGIN
 	CREATE TABLE [finance].[inventory_cost_checks] (
 		 [check_id] INT IDENTITY(1, 1) NOT NULL
 		,[as_of_date] DATE NOT NULL
+        ,[scope_json] NVARCHAR(MAX) NOT NULL CONSTRAINT DF_inventory_cost_checks_scope DEFAULT (N'[{"entity":"Shiner Ltd","locations":["BRISTOL"]},{"entity":"Shiner B.V","locations":["3PL"]},{"entity":"Shiner LLC","locations":["POMONA"]}]')
+        ,CONSTRAINT CK_inventory_cost_checks_scope CHECK (ISJSON(scope_json)=1)
 		,[status] NVARCHAR(20) NOT NULL CONSTRAINT [DF_inventory_cost_checks_status] DEFAULT (N'requested')
 		,[requested_by_id] NVARCHAR(184) NOT NULL
 		,[requested_by] NVARCHAR(256) NOT NULL

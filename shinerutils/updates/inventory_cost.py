@@ -1,32 +1,21 @@
-"""Run the inventory cost checks and build the inventory cost datasets that finance queues in Shiner Reports.
+"""Run one explicitly started inventory operation. No queue, staging table or scheduled polling."""
 
-The portal only queues requests (finance.request_inventory_cost_check and finance.request_inventory_cost). This module,
-run every minute by scripts/run_inventory_cost.py, claims them one at a time (finance.claim_inventory_cost_request),
-reads NAV (SQL02: Ltd BRISTOL and B.V 3PL; SQL04: LLC POMONA) as at the request's date and writes the result:
-
-* a check: the receipt lines not invoiced by the date and the entries still to be cost-adjusted (both warnings)
-  into finance.inventory_cost_receipts / finance.inventory_cost_unadjusted, then finance.complete_inventory_cost_check with the
-  number of value entries not posted to the G/L (the only blocker), all in one transaction;
-* a dataset: the stock and its cost (actual + expected) into finance.inventory_cost_staging, then
-  finance.build_inventory_cost, which moves it into finance.inventory_cost_lines and drops the staging table.
-
-A request that fails is marked failed with the reason (finance.fail_inventory_cost_request) and logged.
-"""
-
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+import json
+import re
+from xml.etree.ElementTree import Element, SubElement, tostring
+from random import uniform
+from time import sleep
 
 from pandas import DataFrame, concat, isna, to_datetime
-from sqlalchemy.dialects.mssql import DATE, DECIMAL, INTEGER, NVARCHAR
 from sqlalchemy.engine import Engine
 
 from shinerutils.constants import SELECTS_SQL02, SELECTS_SQL04
 from shinerutils.logging import DatabaseLogger
 from shinerutils.sql import (
-    execute_sql_procedure,
     transactional_connection,
     write_df_to_sql_db,
 )
@@ -36,11 +25,32 @@ TABLE = "inventory_cost"
 # The tables and procedures are in data_control's [finance] schema (sql/database/schema_finance.sql).
 SCHEMA = "finance"
 ENTITIES = ("Shiner Ltd", "Shiner B.V", "Shiner LLC")
-# A run handles at most this many requests, so one minute's job cannot run on indefinitely.
-MAX_REQUESTS_PER_RUN = 10
+LEGACY_SCOPE = [{"entity": entity, "locations": [location]} for entity, location in zip(ENTITIES, ("BRISTOL", "3PL", "POMONA"))]
+
+
+def scope_xml(scope):
+    scope = LEGACY_SCOPE if scope is None else scope
+    if not isinstance(scope, list) or not 1 <= len(scope) <= 3:
+        raise ValueError("Invalid inventory scope")
+    seen, root = set(), Element("scope")
+    for entry in scope:
+        entity, locations = entry.get("entity"), entry.get("locations")
+        if entity not in ENTITIES or entity in seen:
+            raise ValueError("Invalid inventory scope entity")
+        seen.add(entity)
+        node = SubElement(root, "entity", name=entity, all="1" if locations is None else "0")
+        if locations is not None:
+            if not isinstance(locations, list) or not 1 <= len(locations) <= 100:
+                raise ValueError("Invalid inventory scope locations")
+            for code in locations:
+                if not isinstance(code, str) or len(code) > 10 or any(ord(c) < 32 for c in code):
+                    raise ValueError("Invalid inventory location code")
+                SubElement(node, "location", code=code)
+    return tostring(root, encoding="unicode")
 
 RECEIPT_COLUMNS = [
     "entity",
+    "location_code",
     "document_no",
     "document_line_no",
     "order_no",
@@ -61,6 +71,7 @@ RECEIPT_COLUMNS = [
 ]
 UNADJUSTED_COLUMNS = [
     "entity",
+    "location_code",
     "entry_no",
     "posting_date",
     "entry_type",
@@ -69,9 +80,10 @@ UNADJUSTED_COLUMNS = [
     "quantity",
     "remaining_quantity",
 ]
-COUNT_COLUMNS = ["entity", "unadjusted_entries", "unposted_entries"]
-STAGING_COLUMNS = [
+COUNT_COLUMNS = ["entity", "unposted_entries"]
+DATASET_COLUMNS = [
     "entity",
+    "location_code",
     "item_id",
     "quantity",
     "cost",
@@ -79,16 +91,35 @@ STAGING_COLUMNS = [
     "first_receipt",
     "last_receipt",
 ]
-STAGING_DATATYPES = {
-    "dataset_id": INTEGER(),
-    "entity": NVARCHAR(20),
-    "item_id": NVARCHAR(20),
-    "quantity": DECIMAL(38, 20),
-    "cost": DECIMAL(38, 20),
-    "expected_cost": DECIMAL(38, 20),
-    "first_receipt": DATE(),
-    "last_receipt": DATE(),
-}
+
+
+
+# Retry only source SELECTs killed by SQL Server as a deadlock victim. Writes are never retried.
+READ_RETRY_DELAYS = (1, 2, 4)
+
+
+def _is_deadlock(error: str) -> bool:
+    return re.search(r"\(1205\)", error) is not None
+
+
+def _read_source(engine, path, params, logger, source_name):
+    for attempt in range(len(READ_RETRY_DELAYS) + 1):
+        frame, error = concurrent_df_load_params(engine, path, params, logger, source_name)
+        if error is None:
+            return frame, None
+        deadlock = _is_deadlock(error)
+        if deadlock and attempt < len(READ_RETRY_DELAYS):
+            logger.warning(table=TABLE, action="retry inventory source read",
+                           message=f"{source_name}: SQL deadlock 1205; retry {attempt + 1} of {len(READ_RETRY_DELAYS)}")
+            # The helper has closed/rolled back the failed read connection before this retry.
+            sleep(READ_RETRY_DELAYS[attempt] + uniform(0, 0.25))
+            continue
+        logger.error(table=TABLE, action=f"read {source_name} failed", message=error)
+        source = source_name.split(" ", 1)[0].upper()
+        if deadlock:
+            return None, f"{source} was busy. The inventory read could not complete after {attempt + 1} attempts. Please try again."
+        return None, f"The inventory data could not be read from {source}. Ask an administrator to check the database log."
+    raise AssertionError("Unreachable source read retry state")
 
 
 def _load(
@@ -98,21 +129,25 @@ def _load(
     as_of: date,
     columns: list[str],
     logger: DatabaseLogger,
+    scope=None,
 ) -> DataFrame:
     """Run sql/select/shinersql02 and shinersql04/<query>.sql for the as-of date and combine the results."""
 
-    sources = (
+    scope = LEGACY_SCOPE if scope is None else scope
+    xml = scope_xml(scope)
+    selected = {entry["entity"] for entry in scope}
+    sources = [source for source in (
         (engine_sql02, SELECTS_SQL02, "sql02"),
         (engine_sql04, SELECTS_SQL04, "sql04"),
-    )
+    ) if selected.intersection(ENTITIES[:2] if source[2] == "sql02" else ENTITIES[2:])]
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(
-                concurrent_df_load_params,
+                _read_source,
                 engine,
                 Path(path) / f"{query}.sql",
-                (as_of.isoformat(),),
+                (as_of.isoformat(), xml),
                 logger,
                 f"{label} {query}",
             )
@@ -131,6 +166,12 @@ def _load(
             raise ValueError(
                 f"the {query} query is missing columns: {', '.join(missing)}"
             )
+        allowed = {entry["entity"]: entry.get("locations") for entry in scope}
+        for entity, rows in frame.groupby("entity", dropna=False):
+            if entity not in allowed:
+                raise ValueError("source rows are outside the selected entities")
+            if "location_code" in rows and allowed[entity] is not None and not rows["location_code"].isin(allowed[entity]).all():
+                raise ValueError("source rows are outside the selected locations")
         frames.append(frame.loc[:, columns])
 
     return concat(frames, ignore_index=True)
@@ -147,7 +188,7 @@ def _decimal(value) -> Decimal | None:
 
 
 def validate_dataset(frame: DataFrame) -> DataFrame:
-    """Check the NAV rows for a dataset before they are staged; build_inventory_cost checks them again."""
+    """Check the NAV rows for a dataset before they are saved; build_inventory_cost checks them again."""
 
     if frame.empty:
         raise ValueError("NAV returned no stock for the as-of date")
@@ -169,8 +210,10 @@ def validate_dataset(frame: DataFrame) -> DataFrame:
     if not frame["entity"].isin(ENTITIES).all():
         raise ValueError("the dataset contains an unknown company")
 
-    if frame.duplicated(subset=["entity", "item_id"]).any():
-        raise ValueError("the dataset contains a company and item more than once")
+    if "location_code" not in frame or frame["location_code"].map(lambda code: not isinstance(code, str) or len(code) > 10).any():
+        raise ValueError("the dataset contains an invalid location code")
+    if frame.duplicated(subset=["entity", "location_code", "item_id"]).any():
+        raise ValueError("the dataset contains a company, location and item more than once")
 
     # No expected cost (NULL from SQL, so None or NaN here) is 0.
     frame["expected_cost"] = frame["expected_cost"].map(
@@ -208,6 +251,7 @@ def run_inventory_cost_check(
     logger: DatabaseLogger,
     check_id: int,
     as_of: date,
+    scope=None,
 ) -> str:
     """Run one claimed check and complete it; returns a summary for the log. Raises on any failure."""
 
@@ -218,6 +262,7 @@ def run_inventory_cost_check(
         as_of,
         RECEIPT_COLUMNS,
         logger,
+        scope,
     )
     unadjusted = _load(
         engine_sql02,
@@ -226,6 +271,7 @@ def run_inventory_cost_check(
         as_of,
         UNADJUSTED_COLUMNS,
         logger,
+        scope,
     )
     counts = _load(
         engine_sql02,
@@ -234,17 +280,20 @@ def run_inventory_cost_check(
         as_of,
         COUNT_COLUMNS,
         logger,
+        scope,
     )
 
-    if counts[["unadjusted_entries", "unposted_entries"]].isna().any().any():
+    # One blocking count per company is required: missing source results must not pass a check.
+    entities = {entry["entity"] for entry in (LEGACY_SCOPE if scope is None else scope)}
+    if len(counts) != len(entities) or set(counts["entity"]) != entities:
+        raise ValueError("the inventory_cost_checks query must return one count for each company")
+    if counts["unposted_entries"].isna().any():
         raise ValueError("the inventory_cost_checks query returned a missing count")
-
     unposted = int(counts["unposted_entries"].sum())
-    # The counted and listed flagged entries come from the same filters; a difference means the queries drifted.
-    if int(counts["unadjusted_entries"].sum()) != len(unadjusted):
-        raise ValueError(
-            "the counted and listed entries still to be cost-adjusted differ"
-        )
+    if (counts["unposted_entries"] < 0).any():
+        raise ValueError("the inventory_cost_checks query returned a negative count")
+    # The warning counts describe exactly the lists saved in this transaction, without rereading NAV.
+    uninvoiced_lines, unadjusted_entries = len(receipts), len(unadjusted)
 
     receipts.insert(0, "check_id", check_id)
     unadjusted.insert(0, "check_id", check_id)
@@ -269,14 +318,24 @@ def run_inventory_cost_check(
                 schema=SCHEMA,
             )
         connection.exec_driver_sql(
-            "EXEC [finance].[complete_inventory_cost_check] @check_id = ?, @unposted_entries = ?;",
-            (int(check_id), unposted),
+            "EXEC [finance].[complete_inventory_cost_check] @check_id = ?, @unposted_entries = ?, "
+            "@uninvoiced_lines = ?, @unadjusted_entries = ?;",
+            (int(check_id), unposted, uninvoiced_lines, unadjusted_entries),
         )
 
     return (
         f"inventory cost check {check_id} as of {as_of.isoformat()} complete: {unposted} value entries not posted to "
         f"the G/L, {len(receipts)} receipt lines not invoiced, {len(unadjusted)} entries still to be cost-adjusted"
     )
+
+
+def _json_value(value):
+    if isinstance(value, Decimal):
+        # SQL DECIMAL cannot parse exponent strings such as 0E-20 or 1E-20.
+        return format(value, "f")
+    if isinstance(value, date):
+        return value.isoformat()
+    raise TypeError(f"Unsupported inventory value: {type(value).__name__}")
 
 
 def run_inventory_cost_dataset(
@@ -286,55 +345,19 @@ def run_inventory_cost_dataset(
     logger: DatabaseLogger,
     dataset_id: int,
     as_of: date,
+    scope=None,
 ) -> str:
-    """Load one claimed dataset from NAV into staging and build it; returns a summary for the log. Raises on failure."""
-
-    frame = validate_dataset(
-        _load(
-            engine_sql02,
-            engine_sql04,
-            "inventory_cost_staging",
-            as_of,
-            STAGING_COLUMNS,
-            logger,
-        )
-    )
-    frame.insert(0, "dataset_id", int(dataset_id))
-    rows = len(frame)
-
-    write_df_to_sql_db(
-        engine_sql18,
-        "inventory_cost_staging",
-        frame,
-        "replace",
-        chunksize=min(rows, 20000),
-        datatype=STAGING_DATATYPES,
-        schema=SCHEMA,
-    )
-
-    _, error = execute_sql_procedure(
-        engine_sql18,
-        f"EXEC [finance].[build_inventory_cost] @dataset_id = {int(dataset_id)};",
-    )
-    if error is not None:
-        raise RuntimeError(f"build_inventory_cost failed: {error}")
-
-    return f"inventory cost dataset {dataset_id} as of {as_of.isoformat()} built: {rows} lines"
-
-
-def _claim(engine_sql18: Engine) -> tuple[str, int, date] | None:
+    """Read and validate NAV rows, then save lines and totals in one SQL transaction."""
+    frame = validate_dataset(_load(engine_sql02, engine_sql04, "inventory_cost_dataset", as_of, DATASET_COLUMNS, logger, scope))
+    # Decimal strings avoid binary-float loss; SQL parses them as DECIMAL(38,20).
+    payload = json.dumps(frame.to_dict(orient="records"), default=_json_value, allow_nan=False)
     with transactional_connection(engine_sql18) as connection:
-        row = connection.exec_driver_sql(
-            "EXEC [finance].[claim_inventory_cost_request];"
-        ).fetchone()
-    if row is None:
-        return None
-    as_of = row.as_of_date
-    return (
-        str(row.request_kind),
-        int(row.request_id),
-        as_of if isinstance(as_of, date) else date.fromisoformat(str(as_of)[:10]),
-    )
+        connection.exec_driver_sql(
+            "EXEC [finance].[build_inventory_cost] @dataset_id = ?, @rows_json = ?;",
+            (int(dataset_id), payload),
+        )
+    return f"inventory cost dataset {dataset_id} as of {as_of.isoformat()} built: {len(frame)} lines"
+
 
 
 def _fail(engine_sql18: Engine, kind: str, request_id: int, message: str) -> str | None:
@@ -349,47 +372,54 @@ def _fail(engine_sql18: Engine, kind: str, request_id: int, message: str) -> str
         return str(exc)
 
 
-def process_inventory_cost_requests(
+def process_inventory_cost_operation(
     engine_sql02: Engine,
     engine_sql04: Engine,
     engine_sql18: Engine,
     logger: DatabaseLogger,
 ) -> int | None:
-    """Handle every queued check and dataset (up to MAX_REQUESTS_PER_RUN). Returns how many were handled, or None
-    when the queue could not be read. Each request is logged as a success or an error."""
+    """Run the single pending operation, holding a session lock until it finishes.
 
-    runners: dict[str, Callable[..., str]] = {
-        "check": run_inventory_cost_check,
-        "dataset": run_inventory_cost_dataset,
-    }
-    handled = 0
-
-    while handled < MAX_REQUESTS_PER_RUN:
-        try:
-            request = _claim(engine_sql18)
-        except Exception as exc:  # noqa: BLE001
-            logger.error(
-                table=TABLE, action="claim inventory cost request", message=str(exc)
-            )
-            return None if handled == 0 else handled
-
-        if request is None:
-            break
-
-        kind, request_id, as_of = request
-        action = f"inventory cost {kind} {request_id}"
-        handled += 1
-
-        try:
-            summary = runners[kind](
-                engine_sql02, engine_sql04, engine_sql18, logger, request_id, as_of
-            )
-            logger.success(table=TABLE, action=action, message=summary)
-        except Exception as exc:  # noqa: BLE001
-            message = f"{exc}"
-            logger.error(table=TABLE, action=action, message=message)
-            error = _fail(engine_sql18, kind, request_id, message)
-            if error is not None:
-                logger.error(table=TABLE, action=f"mark {action} failed", message=error)
-
-    return handled
+    The lock also prevents submissions while a worker is still exiting. A lost
+    connection releases it; the next submission can identify interrupted work.
+    """
+    try:
+        with engine_sql18.connect() as connection:
+            lock = connection.exec_driver_sql(
+                "DECLARE @result int; EXEC @result = sys.sp_getapplock "
+                "@Resource=N'inventory_cost_operation', @LockMode=N'Exclusive', "
+                "@LockOwner=N'Session', @LockTimeout=0; SELECT @result;"
+            ).scalar_one()
+            connection.commit()
+            if lock < 0:
+                raise RuntimeError("Another inventory operation is already running")
+            try:
+                row = connection.exec_driver_sql("EXEC [finance].[begin_inventory_cost_operation];").fetchone()
+                connection.commit()
+                if row is None:
+                    return 0
+                kind, operation_id, as_of = str(row.request_kind), int(row.request_id), row.as_of_date
+                action = f"inventory cost {kind} {operation_id}"
+                try:
+                    runner = {"check": run_inventory_cost_check, "dataset": run_inventory_cost_dataset}[kind]
+                    scope = json.loads(row.scope_json)
+                    scope_xml(scope)  # Refuse malformed stored scope before reading either source.
+                    summary = runner(engine_sql02, engine_sql04, connection, logger, operation_id, as_of, scope)
+                    connection.commit()
+                    logger.success(table=TABLE, action=action, message=summary)
+                except Exception as exc:
+                    connection.rollback()
+                    logger.error(table=TABLE, action=action, message=str(exc))
+                    error = _fail(engine_sql18, kind, operation_id, str(exc))
+                    if error is not None:
+                        logger.error(table=TABLE, action=f"mark {action} failed", message=error)
+                return 1
+            finally:
+                connection.rollback()
+                connection.exec_driver_sql(
+                    "EXEC sys.sp_releaseapplock @Resource=N'inventory_cost_operation', @LockOwner=N'Session';"
+                )
+                connection.commit()
+    except Exception as exc:
+        logger.error(table=TABLE, action="start inventory cost operation", message=str(exc))
+        return None

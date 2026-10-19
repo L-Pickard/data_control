@@ -1,13 +1,35 @@
--- Inventory cost check (Shiner Ltd BRISTOL, Shiner B.V 3PL): the item ledger entries still flagged "Applied Entry to
--- Adjust" (FIFO: Adjust Cost - Item Entries has not reached them), for finance.inventory_cost_unadjusted (the loader adds
--- check_id). A WARNING list, not a blocker, scoped to the dataset location, entries posted in the 12 months up to the
--- as-of date and items with stock there at that date (user decisions, 15 Oct 2026); the same entries as unadjusted_entries in inventory_cost_checks.sql.
--- Parameter: ? = the as-of date. remaining_quantity is the open quantity now.
+-- Read-only inventory source query, scoped to selected entities and locations.
+-- Parameters: as-of date, then XML scope (SQL02 supports XML, not OPENJSON).
 DECLARE @as_of AS DATETIME = CAST(? AS DATETIME);
+DECLARE @scope XML = CAST(? AS XML);
+DECLARE @ltd_enabled BIT = @scope.exist('/scope/entity[@name="Shiner Ltd"]');
+DECLARE @ltd_all BIT = @scope.exist('/scope/entity[@name="Shiner Ltd" and @all="1"]');
+DECLARE @bv_enabled BIT = @scope.exist('/scope/entity[@name="Shiner B.V"]');
+DECLARE @bv_all BIT = @scope.exist('/scope/entity[@name="Shiner B.V" and @all="1"]');
 DECLARE @day_after AS DATETIME = DATEADD(DAY, 1, @as_of);
 DECLARE @cut_off AS DATETIME = DATEADD(MONTH, - 12, @day_after);
 
+;WITH [ltd_stock] AS (
+    SELECT st.[Location Code] AS [location_code], st.[Item No_] AS [item_id]
+    FROM [Shiner$Item Ledger Entry] AS st
+    WHERE (@ltd_enabled=1 AND (@ltd_all=1 OR st.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner Ltd"]/location') AS lc(n))))
+        AND st.[Drop Shipment] = 0
+        AND st.[Posting Date] < @day_after
+    GROUP BY st.[Location Code], st.[Item No_]
+    HAVING SUM(st.[Quantity]) > 0
+),
+[bv_stock] AS (
+    SELECT st.[Location Code] AS [location_code], st.[Item No_] AS [item_id]
+    FROM [Shiner BV$Item Ledger Entry] AS st
+    WHERE (@bv_enabled=1 AND (@bv_all=1 OR st.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner B.V"]/location') AS lc(n))))
+        AND st.[Drop Shipment] = 0
+        AND st.[Posting Date] < @day_after
+    GROUP BY st.[Location Code], st.[Item No_]
+    HAVING SUM(st.[Quantity]) > 0
+)
+
 SELECT N'Shiner Ltd' AS [entity]
+	,il.[Location Code] AS [location_code]
 	,il.[Entry No_] AS [entry_no]
 	,CAST(il.[Posting Date] AS DATE) AS [posting_date]
 	,CASE il.[Entry Type]
@@ -30,29 +52,19 @@ SELECT N'Shiner Ltd' AS [entity]
 
 FROM [Shiner$Item Ledger Entry] AS il
 
+INNER JOIN [ltd_stock] AS stock ON stock.[item_id] = il.[Item No_] AND stock.[location_code] = il.[Location Code]
+
 WHERE il.[Applied Entry to Adjust] = 1
-	AND il.[Location Code] = N'BRISTOL'
+	AND (@ltd_enabled=1 AND (@ltd_all=1 OR il.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner Ltd"]/location') AS lc(n))))
 	AND il.[Posting Date] >= @cut_off
 	AND il.[Posting Date] < @day_after
-	-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
-	-- so its entries cannot change it (user, 15 Oct 2026).
-	AND EXISTS (
-		SELECT 1
 
-		FROM [Shiner$Item Ledger Entry] AS st
-
-		WHERE st.[Item No_] = il.[Item No_]
-			AND st.[Location Code] = N'BRISTOL'
-			AND st.[Drop Shipment] = 0
-			AND st.[Posting Date] < @day_after
-
-		HAVING SUM(st.[Quantity]) > 0
-		)
 
 
 UNION ALL
 
 SELECT N'Shiner B.V' AS [entity]
+	,il.[Location Code] AS [location_code]
 	,il.[Entry No_] AS [entry_no]
 	,CAST(il.[Posting Date] AS DATE) AS [posting_date]
 	,CASE il.[Entry Type]
@@ -75,25 +87,15 @@ SELECT N'Shiner B.V' AS [entity]
 
 FROM [Shiner BV$Item Ledger Entry] AS il
 
+INNER JOIN [bv_stock] AS stock ON stock.[item_id] = il.[Item No_] AND stock.[location_code] = il.[Location Code]
+
 WHERE il.[Applied Entry to Adjust] = 1
-	AND il.[Location Code] = N'3PL'
+	AND (@bv_enabled=1 AND (@bv_all=1 OR il.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner B.V"]/location') AS lc(n))))
 	AND il.[Posting Date] >= @cut_off
 	AND il.[Posting Date] < @day_after
-	-- Only items with stock at the location at the end of the as-of date: an item with none is not in the dataset,
-	-- so its entries cannot change it (user, 15 Oct 2026).
-	AND EXISTS (
-		SELECT 1
 
-		FROM [Shiner BV$Item Ledger Entry] AS st
-
-		WHERE st.[Item No_] = il.[Item No_]
-			AND st.[Location Code] = N'3PL'
-			AND st.[Drop Shipment] = 0
-			AND st.[Posting Date] < @day_after
-
-		HAVING SUM(st.[Quantity]) > 0
-		)
 
 ORDER BY [entity]
 	,[posting_date]
-	,[entry_no];
+	,[entry_no]
+OPTION (RECOMPILE, MAXDOP 1);

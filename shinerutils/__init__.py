@@ -57,7 +57,7 @@ from .updates.item_packaging import update_item_packaging_table
 from .updates.inventory import update_inventory_table
 from .updates.item_inventory_costs import update_item_inventory_costs_table
 from .updates.inventory_cost import (
-    process_inventory_cost_requests,
+    process_inventory_cost_operation,
     run_inventory_cost_check,
     run_inventory_cost_dataset,
 )
@@ -135,7 +135,7 @@ __all__ = [
     "update_items_table",
     "update_inventory_table",
     "update_item_inventory_costs_table",
-    "process_inventory_cost_requests",
+    "process_inventory_cost_operation",
     "run_inventory_cost_check",
     "run_inventory_cost_dataset",
     "update_item_images_table",

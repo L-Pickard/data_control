@@ -25,6 +25,7 @@ BEGIN
 	CREATE TABLE [finance].[inventory_cost_receipts] (
 		 [check_id] INT NOT NULL
 		,[entity] NVARCHAR(20) NOT NULL
+        ,[location_code] NVARCHAR(10) NOT NULL
 		,[document_no] NVARCHAR(20) NOT NULL
 		,[document_line_no] INT NOT NULL
 		,[order_no] NVARCHAR(20) NULL

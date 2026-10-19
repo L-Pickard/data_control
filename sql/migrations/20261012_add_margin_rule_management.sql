@@ -96,13 +96,13 @@ WHERE o.[name] LIKE N'margin[_]rule[_]%' AND o.[type] = 'U'
 ORDER BY o.[name];
 
 -- Next, in this order (each is CREATE OR ALTER):
---   sql/procedures/save_margin_rule_snapshot.sql
---   sql/procedures/restore_margin_rule_snapshot.sql
---   sql/procedures/add_exclusion_rule.sql
---   sql/procedures/delete_exclusion_rule.sql
---   sql/procedures/add_deduction_rule.sql
---   sql/procedures/delete_deduction_rule.sql
---   sql/procedures/reset_sales_exclusion_flags.sql
---   sql/procedures/recalculate_sales_deductions.sql
---   sql/procedures/run_margin_rule_recalculation.sql
+--   sql/procedures/dbo/save_margin_rule_snapshot.sql
+--   sql/procedures/dbo/restore_margin_rule_snapshot.sql
+--   sql/procedures/dbo/add_exclusion_rule.sql
+--   sql/procedures/dbo/delete_exclusion_rule.sql
+--   sql/procedures/dbo/add_deduction_rule.sql
+--   sql/procedures/dbo/delete_deduction_rule.sql
+--   sql/procedures/dbo/reset_sales_exclusion_flags.sql
+--   sql/procedures/dbo/recalculate_sales_deductions.sql
+--   sql/procedures/dbo/run_margin_rule_recalculation.sql
 --   sql/database/grants_shiner_reports_portal.sql

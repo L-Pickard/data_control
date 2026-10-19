@@ -43,7 +43,7 @@ BEGIN
 		WHERE [check_id] = @request_id
 			AND [status] = N'running';
 	ELSE IF @request_kind = N'dataset'
-		UPDATE [finance].[inventory_cost]
+		UPDATE [finance].[inventory_cost_headers]
 
 		SET [status] = N'failed'
 			,[completed_at] = SYSDATETIME()

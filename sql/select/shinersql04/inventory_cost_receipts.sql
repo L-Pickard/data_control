@@ -1,13 +1,15 @@
--- Inventory cost check (Shiner LLC POMONA): purchase receipt lines posted on or before the as-of date whose quantity
--- was not fully invoiced by the end of that date (a warning list, not a blocker). Same rules and columns as
--- shinersql02/inventory_cost_receipts.sql; LLC items have no colours or sizes (as in items.sql). Validated read-only
--- on shinersql04 (15 Oct 2026). Parameter: ? = the as-of date.
+-- Read-only inventory source query, scoped to selected entities and locations.
+-- Parameters: as-of date, then XML scope (SQL02 supports XML, not OPENJSON).
 DECLARE @as_of AS DATETIME = CAST(? AS DATETIME);
+DECLARE @scope XML = CAST(? AS XML);
+DECLARE @llc_enabled BIT = @scope.exist('/scope/entity[@name="Shiner LLC"]');
+DECLARE @llc_all BIT = @scope.exist('/scope/entity[@name="Shiner LLC" and @all="1"]');
 DECLARE @day_after AS DATETIME = DATEADD(DAY, 1, @as_of);
 
 WITH receipts
 AS (
 	SELECT N'Shiner LLC' AS [entity]
+		,il.[Location Code] AS [location_code]
 		,il.[Entry No_] AS [entry_no]
 		,il.[Document No_] AS [document_no]
 		,il.[Document Line No_] AS [document_line_no]
@@ -29,12 +31,13 @@ AS (
 		AND il.[Document Type] = 5
 		AND il.[Correction] = 0
 		AND il.[Drop Shipment] = 0
-		AND il.[Location Code] = N'POMONA'
+		AND (@llc_enabled=1 AND (@llc_all=1 OR il.[Location Code] IN (SELECT lc.n.value('@code','nvarchar(10)') FROM @scope.nodes('/scope/entity[@name="Shiner LLC"]/location') AS lc(n))))
 		AND il.[Quantity] > 0
 		AND il.[Posting Date] < @day_after
 	)
 
 SELECT rc.[entity]
+	,rc.[location_code]
 	,rc.[document_no]
 	,rc.[document_line_no]
 	,rl.[Order No_] AS [order_no]
@@ -72,4 +75,5 @@ WHERE rc.[quantity] > rc.[quantity_invoiced]
 
 ORDER BY rl.[Buy-from Vendor No_]
 	,rc.[document_no]
-	,rc.[document_line_no];
+	,rc.[document_line_no]
+OPTION (RECOMPILE, MAXDOP 1);

@@ -62,7 +62,7 @@ BEGIN
 
 	SELECT @datasets = COUNT(*)
 
-	FROM [finance].[inventory_cost] AS ic WITH (UPDLOCK, HOLDLOCK)
+	FROM [finance].[inventory_cost_headers] AS ic WITH (UPDLOCK, HOLDLOCK)
 
 	WHERE ic.[check_id] = @check_id;
 

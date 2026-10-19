@@ -1,7 +1,7 @@
 # Run the actual procedure against session-local fixtures; no real sales are deleted.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$body = Get-Content -LiteralPath (Join-Path $repoRoot 'sql/procedures/delete_sales_from_date.sql') -Raw
+$body = Get-Content -LiteralPath (Join-Path $repoRoot 'sql/procedures/dbo/delete_sales_from_date.sql') -Raw
 $body = $body.Substring($body.IndexOf('CREATE OR ALTER PROCEDURE'))
 $body = $body.Replace('CREATE OR ALTER PROCEDURE [dbo].[delete_sales_from_date]', 'CREATE PROCEDURE #delete_sales_from_date')
 $body = $body.Replace('[dbo].[sales]', '#sales').Replace('[dbo].[entities]', '#entities').Replace('[dbo].[write_db_log]', '#write_db_log')

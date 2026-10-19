@@ -11,14 +11,14 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 -- Inventory cost datasets (header): one row per dataset a finance user creates in the portal (Inventory Datasets app).
--- A dataset is the stock and its cost at the end of as_of_date for Ltd (BRISTOL), B.V (3PL) and LLC (POMONA), read
+-- A dataset is the stock and its cost at the end of as_of_date for the entities and locations recorded on its check, read
 -- from NAV by the dataset job: actual cost plus expected cost (received, not yet invoiced) posted by the date, in each
 -- company's currency and converted at the rates stored here. The
 -- Inventory Cost report shows datasets only; its lines are finance.inventory_cost_lines.
---   check_id      the passed check (finance.inventory_cost_checks, same as_of_date: nothing left to post to the G/L) the
+--   check_id      the completed check (finance.inventory_cost_checks, same as_of_date: passed or explicitly overridden) the
 --                 dataset was created from; its warnings (receipts not invoiced, entries not adjusted) stay with it
 --   status        requested (inserted by the request procedure, which starts the job), loading (the job is reading
---                 NAV into finance.inventory_cost_staging), complete (lines, line_count and totals written in one
+--                 NAV and passes rows directly to the build procedure), complete (lines, line_count and totals written in one
 --                 transaction by the build procedure) or failed (message says why; no lines)
 --   *_confirmed_at when the creator ticked "Item adjusting cost complete" and "Item costs posted to G/L"
 --   rate_method   latest (latest daily rate of each pair), fourWeeks (average of the daily rates over the 28 days up
@@ -30,9 +30,9 @@ GO
 -- created_by_id is the portal person's id (Windows SID, portal.users.user_id); created_by their display name.
 -- Permanent finance data: create only when missing. This file never drops the table. Deploy changes with a migration.
 
-IF OBJECT_ID(N'[finance].[inventory_cost]', N'U') IS NULL
+IF OBJECT_ID(N'[finance].[inventory_cost_headers]', N'U') IS NULL
 BEGIN
-	CREATE TABLE [finance].[inventory_cost] (
+	CREATE TABLE [finance].[inventory_cost_headers] (
 		 [dataset_id] INT IDENTITY(1, 1) NOT NULL
 		,[description] NVARCHAR(100) NOT NULL
 		,[as_of_date] DATE NOT NULL
@@ -43,8 +43,11 @@ BEGIN
 		,[created_at] DATETIME2(0) NOT NULL CONSTRAINT [DF_inventory_cost_created_at] DEFAULT (SYSDATETIME())
 		,[started_at] DATETIME2(0) NULL
 		,[completed_at] DATETIME2(0) NULL
-		,[cost_adjusted_confirmed_at] DATETIME2(0) NOT NULL
-		,[posted_to_gl_confirmed_at] DATETIME2(0) NOT NULL
+		,[cost_adjusted_confirmed_at] DATETIME2(0) NULL
+		,[posted_to_gl_confirmed_at] DATETIME2(0) NULL
+        ,[reviewed_at] DATETIME2(0) NULL
+        ,[override_reason] NVARCHAR(500) NULL
+        ,[override_at] DATETIME2(0) NULL
 		,[rate_method] NVARCHAR(20) NOT NULL
 		,[rates_from] DATE NULL
 		,[rates_to] DATE NULL
@@ -59,6 +62,8 @@ BEGIN
 		,[total_eur] DECIMAL(38, 20) NULL
 		,[total_usd] DECIMAL(38, 20) NULL
 		,[message] NVARCHAR(4000) NULL
+        ,CONSTRAINT [CK_inventory_cost_override] CHECK ((override_reason IS NULL AND override_at IS NULL) OR (override_reason IS NOT NULL AND LEN(LTRIM(RTRIM(override_reason)))>0 AND override_at IS NOT NULL))
+        ,CONSTRAINT [CK_inventory_cost_review] CHECK (reviewed_at IS NOT NULL OR (cost_adjusted_confirmed_at IS NOT NULL AND posted_to_gl_confirmed_at IS NOT NULL))
 		,CONSTRAINT [PK_inventory_cost] PRIMARY KEY CLUSTERED ([dataset_id])
 		,CONSTRAINT [UQ_inventory_cost_description] UNIQUE ([description])
 		,CONSTRAINT [FK_inventory_cost_check] FOREIGN KEY ([check_id]) REFERENCES [finance].[inventory_cost_checks] ([check_id])
@@ -99,11 +104,11 @@ BEGIN
 		);
 
 	CREATE NONCLUSTERED INDEX [IX_inventory_cost_as_of_date]
-		ON [finance].[inventory_cost] ([as_of_date] DESC, [dataset_id] DESC)
+		ON [finance].[inventory_cost_headers] ([as_of_date] DESC, [dataset_id] DESC)
 		INCLUDE ([description], [status]);
 
 	CREATE NONCLUSTERED INDEX [IX_inventory_cost_check]
-		ON [finance].[inventory_cost] ([check_id]);
+		ON [finance].[inventory_cost_headers] ([check_id]);
 END
 
 GO

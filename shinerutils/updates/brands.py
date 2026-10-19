@@ -40,6 +40,18 @@ def normalize_optional_brand_text(df):
     return df
 
 
+def apply_brand_name_overrides(df, df_overrides):
+    """Replace NAV brand descriptions with the names kept in brand_name_overrides.csv."""
+
+    if df_overrides["brand_id"].duplicated().any():
+        raise ValueError("brand_name_overrides.csv contains duplicate brand_id values")
+
+    overrides = df_overrides.set_index("brand_id")["brand_name"]
+    names = df["brand_id"].map(overrides)
+    df["brand_name"] = names.where(names.notna(), df["brand_name"])
+    return df
+
+
 def update_brands_table(
     engine_sql02: Engine, engine_sql18: Engine, logger: DatabaseLogger
 ) -> int | None:
@@ -104,6 +116,15 @@ def update_brands_table(
         df = merge(
             df, df_brand_groups, on="brand_id", how="left", validate="one_to_one"
         )
+
+        brand_name_overrides_path = DOCUMENTS / "brand_name_overrides.csv"
+
+        action = (
+            "apply brand name overrides. "
+            f"File: {brand_name_overrides_path.resolve()}"
+        )
+
+        df = apply_brand_name_overrides(df, read_csv(brand_name_overrides_path))
 
         df = normalize_optional_brand_text(df)
 
