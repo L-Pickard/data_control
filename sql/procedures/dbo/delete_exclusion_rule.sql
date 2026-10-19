@@ -55,7 +55,7 @@ BEGIN
 
 			FROM [dbo].[exclusions] AS ex
 
-			WHERE ex.[entity] = @entity
+			WHERE ex.[rule_scope] = N'global' AND ex.[entity] = @entity
 				AND ex.[type] = @type
 				AND ex.[table_name] = @table_name
 				AND ex.[id] = @id
@@ -95,7 +95,7 @@ BEGIN
 
 		FROM [dbo].[exclusions] AS ex
 
-		WHERE ex.[entity] = @entity
+		WHERE ex.[rule_scope] = N'global' AND ex.[entity] = @entity
 			AND ex.[type] = @type
 			AND ex.[table_name] = @table_name
 			AND ex.[id] = @id

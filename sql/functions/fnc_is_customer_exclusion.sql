@@ -27,7 +27,7 @@ BEGIN
 	IF EXISTS (
 			SELECT 1
 			FROM [dbo].[exclusions]
-			WHERE [entity] = @entity
+			WHERE [rule_scope] = N'global' AND [entity] = @entity
 				AND [type] = 'exclusion'
 				AND [table_name] = 'customers'
 				AND [id] = @customer_id

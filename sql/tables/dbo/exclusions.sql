@@ -19,17 +19,27 @@ CREATE TABLE [dbo].[exclusions] (
 		,[id] NVARCHAR(20) NOT NULL
 		,[brand_id] NVARCHAR(20) NOT NULL CONSTRAINT [DF_exclusions_brand_id] DEFAULT (N'')
 		,CONSTRAINT [CK_exclusions_brand_scope] CHECK ([brand_id] = N'' OR ([type] = N'exclusion' AND [table_name] = N'customers'))
-		,CONSTRAINT [PK_exclusions] PRIMARY KEY CLUSTERED (
-			 [entity]
-			,[type]
-			,[table_name]
-			,[id]
-			,[brand_id]
-			)
+        ,[exclusion_rule_id] BIGINT IDENTITY(1,1) NOT NULL
+        ,[rule_scope] NVARCHAR(10) NOT NULL CONSTRAINT [DF_exclusions_rule_scope] DEFAULT N'global'
+        ,[pst_id] INT NULL
+        ,[target_table] NVARCHAR(30) NOT NULL CONSTRAINT [DF_exclusions_target_table] DEFAULT N''
+        ,CONSTRAINT [PK_exclusions] PRIMARY KEY NONCLUSTERED ([exclusion_rule_id])
+        ,CONSTRAINT [FK_exclusions_pst_reports] FOREIGN KEY ([pst_id]) REFERENCES dbo.pst_reports(pst_id)
+        ,CONSTRAINT [CK_exclusions_report_scope] CHECK
+        (
+            (rule_scope=N'global' AND pst_id IS NULL AND target_table=N'')
+            OR (rule_scope=N'pst' AND pst_id IS NOT NULL AND [type]=N'exclusion' AND brand_id=N''
+                AND ((target_table IN (N'sales',N'sales_orders') AND table_name=N'customers')
+                    OR (target_table=N'purchase_orders' AND table_name=N'vendors')))
+        )
 		,CONSTRAINT [FK_exclusions_entities] FOREIGN KEY ([entity])
 			REFERENCES [dbo].[entities] ([entity])
 		);
 
+GO
+
+CREATE UNIQUE CLUSTERED INDEX UX_exclusions_rule ON dbo.exclusions
+    (rule_scope,pst_id,target_table,entity,[type],table_name,id,brand_id);
 GO
 
 INSERT INTO [dbo].[exclusions](
@@ -116,7 +126,7 @@ CROSS JOIN (VALUES (N'CU100487'), (N'CU108312')) AS cu(id)
 CROSS JOIN (VALUES (N'BSC'), (N'BUU'), (N'CRE'), (N'KRX'), (N'MOB'),
                    (N'OJW'), (N'RIC'), (N'SLM'), (N'SCR'), (N'IND'), (N'NHS')) AS br(brand_id)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.exclusions AS ex
-    WHERE ex.entity = en.entity AND ex.[type] = N'exclusion'
+    WHERE ex.rule_scope=N'global' AND ex.entity = en.entity AND ex.[type] = N'exclusion'
       AND ex.table_name = N'customers' AND ex.id = cu.id AND ex.brand_id = br.brand_id);
 
 GO

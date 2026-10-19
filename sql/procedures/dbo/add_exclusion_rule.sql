@@ -114,7 +114,7 @@ BEGIN
 
 			FROM [dbo].[exclusions] AS ex
 
-			WHERE ex.[entity] = @known_entity
+			WHERE ex.[rule_scope] = N'global' AND ex.[entity] = @known_entity
 				AND ex.[type] = @type
 				AND ex.[table_name] = @table_name
 				AND ex.[id] = @known_id

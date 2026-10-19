@@ -24,7 +24,7 @@ Author:   Leo Pickard
 Version:  1.0
 Date:     12/10/2026
 =================================================================================================================================================
-Saves a copy of dbo.exclusions and dbo.deductions as they are now, so they can be put back with
+Saves a copy of the global rules in dbo.exclusions and dbo.deductions as they are now, so they can be put back with
 restore_margin_rule_snapshot. The other margin-rule procedures call it before every change (@return_row = 0); the Shiner
 Reports portal calls it when a person saves a copy by hand.
 
@@ -89,7 +89,7 @@ BEGIN
 			,ex.[id]
 			,ex.[brand_id]
 
-		FROM [dbo].[exclusions] AS ex WITH (HOLDLOCK);
+		FROM [dbo].[exclusions] AS ex WITH (HOLDLOCK) WHERE ex.[rule_scope] = N'global';
 
 		SET @exclusion_rows = @@ROWCOUNT;
 

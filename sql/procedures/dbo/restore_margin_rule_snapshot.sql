@@ -21,8 +21,8 @@ Author:   Leo Pickard
 Version:  1.0
 Date:     12/10/2026
 =================================================================================================================================================
-Puts dbo.exclusions and dbo.deductions back to a saved copy (save_margin_rule_snapshot). Both tables are replaced in one
-transaction, after a copy of what they hold now has been saved, so a restore can itself be undone.
+Puts dbo.exclusions and dbo.deductions back to a saved copy (save_margin_rule_snapshot). Only global exclusions and deductions are replaced in one
+transaction; PST exclusions are preserved. This runs after a copy of what they hold now has been saved, so a restore can itself be undone.
 
 dbo.sales is not touched: run run_margin_rule_recalculation afterwards to bring the stored flags and margins into line.
 Returns one row: outcome (ok or refused), message, snapshot_id (the copy saved before the restore).
@@ -107,7 +107,7 @@ BEGIN
 			,@return_row = 0
 			,@snapshot_id = @saved_id OUTPUT;
 
-		DELETE FROM [dbo].[exclusions];
+		DELETE FROM [dbo].[exclusions] WHERE [rule_scope] = N'global';
 
 		DELETE FROM [dbo].[deductions];
 
