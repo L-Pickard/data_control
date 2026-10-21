@@ -6,7 +6,7 @@ On 19 October 2026, `data_control.dbo.exclusions` was extended in place. The 125
 |---|---|
 | `exclusion_rule_id` | Identity primary key for an individual rule |
 | `rule_scope` | `global` for existing rules; `pst` for report-specific rules |
-| `pst_id` | Foreign key to `dbo.pst_reports`; NULL for global rules |
+| `pst_id` | Foreign key to `portal.pst_reports`; NULL for global rules |
 | `target_table` | Where a PST rule applies; empty string for global rules |
 | `table_name` | Where the code belongs: `customers` or `vendors` |
 | `id` | Customer or vendor code |
@@ -33,9 +33,9 @@ WHERE NOT EXISTS
 
 For sales orders, match `sell_to_customer_id` and target `sales_orders`. For purchase orders, match `vendor_id` and target `purchase_orders`. `dbo.fnc_is_pst_exclusion` also provides a single-party lookup; prefer `NOT EXISTS` for report fact queries.
 
-To add another set, insert a distinct ID and description into `dbo.pst_reports`, then insert `rule_scope=N'pst'`, that ID, the target table and the party/company keys into `dbo.exclusions`. Store the description only in the report catalogue. `last_updated` is UTC, defaults on catalogue creation, and should be updated by the process that refreshes that report; it is not an automatic timestamp for every rule edit.
+To add another set, insert a distinct ID and description into `portal.pst_reports`, then insert `rule_scope=N'pst'`, that ID, the target table and the party/company keys into `dbo.exclusions`. Store the description only in the report catalogue. `last_updated` is UTC, defaults on catalogue creation, and should be updated by the process that refreshes that report; it is not an automatic timestamp for every rule edit.
 
-The catalogue's old, unused exclusion columns were retained as nullable columns. No existing catalogue rows were present. Fresh installations use the catalogue definition in data_control's historical `sql/tables/dbo/pst_exclusions.sql` filename before creating exclusions.
+The catalogue's old, unused exclusion columns were retained as nullable columns. No existing catalogue rows were present. Fresh installations create `sql/tables/portal/pst_reports.sql` before exclusions. The consolidation migration removes the superseded dbo catalogue and portal settings tables.
 
 ## Existing app and snapshots
 

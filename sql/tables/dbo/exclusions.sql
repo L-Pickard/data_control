@@ -24,7 +24,7 @@ CREATE TABLE [dbo].[exclusions] (
         ,[pst_id] INT NULL
         ,[target_table] NVARCHAR(30) NOT NULL CONSTRAINT [DF_exclusions_target_table] DEFAULT N''
         ,CONSTRAINT [PK_exclusions] PRIMARY KEY NONCLUSTERED ([exclusion_rule_id])
-        ,CONSTRAINT [FK_exclusions_pst_reports] FOREIGN KEY ([pst_id]) REFERENCES dbo.pst_reports(pst_id)
+        ,CONSTRAINT [FK_exclusions_pst_reports] FOREIGN KEY ([pst_id]) REFERENCES portal.pst_reports(pst_id)
         ,CONSTRAINT [CK_exclusions_report_scope] CHECK
         (
             (rule_scope=N'global' AND pst_id IS NULL AND target_table=N'')
