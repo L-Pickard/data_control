@@ -544,9 +544,7 @@ def main() -> None:
                 rows=rows_affected,
             )
 
-        maintain_loaded_tables(engine_sql18, successful_tables, logger)
-
-        # Build PST reports last, after all loads and maintenance have completed.
+        # Build PST reports after all loads, then maintain the refreshed tables.
         action = "execute [data_control].[dbo].[update_pst_table]"
         _, error = execute_sql_procedure(engine_sql18, "EXEC [dbo].[update_pst_table];")
         if error is not None:
@@ -563,6 +561,9 @@ def main() -> None:
             action=action,
             message="PST reports successfully refreshed after the daily updates.",
         )
+        successful_tables.append("potential_sell_through")
+
+        maintain_loaded_tables(engine_sql18, successful_tables, logger)
 
     except Exception as e:
 

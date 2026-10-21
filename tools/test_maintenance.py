@@ -71,9 +71,10 @@ class MaintenanceTests(unittest.TestCase):
             self.assertIn('purchase_orders', tables)
             self.assertIn('item_images', tables)
             self.assertIn('item_image_locations', tables)
+            self.assertIn('potential_sell_through', tables)
             logger.flush_log_records.assert_called_once()
             execute.assert_called_once_with(maintenance.call_args.args[0], 'EXEC [dbo].[update_pst_table];')
-            self.assertEqual([call[0] for call in order.mock_calls], ['maintenance', 'pst', 'flush'])
+            self.assertEqual([call[0] for call in order.mock_calls], ['pst', 'maintenance', 'flush'])
 
     def test_pst_failure_fails_daily_run_and_still_flushes_and_disposes(self):
         with ExitStack() as stack:
