@@ -8,6 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 def main() -> None:
     from shinerutils import (
+        execute_sql_procedure,
         get_sqlalchemy_engine,
         update_brands_table,
         update_countries_table,
@@ -544,6 +545,24 @@ def main() -> None:
             )
 
         maintain_loaded_tables(engine_sql18, successful_tables, logger)
+
+        # Build PST reports last, after all loads and maintenance have completed.
+        action = "execute [data_control].[dbo].[update_pst_table]"
+        _, error = execute_sql_procedure(engine_sql18, "EXEC [dbo].[update_pst_table];")
+        if error is not None:
+            logger.failure(
+                table="potential_sell_through",
+                action=action,
+                message=f"PST report refresh failed. Error: {error}",
+            )
+            raise RuntimeError("PST report refresh failed; see the database log.")
+
+        print("PST reports have been successfully updated")
+        logger.success(
+            table="potential_sell_through",
+            action=action,
+            message="PST reports successfully refreshed after the daily updates.",
+        )
 
     except Exception as e:
 

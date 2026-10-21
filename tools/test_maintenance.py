@@ -58,6 +58,12 @@ class MaintenanceTests(unittest.TestCase):
             logger.flush_log_records.return_value=None
             stack.enter_context(patch('shinerutils.logging.DatabaseLogger', return_value=logger))
             maintenance=stack.enter_context(patch('shinerutils.maintenance.maintain_loaded_tables'))
+            stack.enter_context(patch('shinerutils.updates.item_thumbnails.make_missing_item_thumbnails', return_value=None))
+            execute=stack.enter_context(patch.object(shinerutils, 'execute_sql_procedure', return_value=(-1, None)))
+            order=Mock()
+            order.attach_mock(maintenance, 'maintenance')
+            order.attach_mock(execute, 'pst')
+            order.attach_mock(logger.flush_log_records, 'flush')
             stack.enter_context(patch('builtins.print'))
             daily_updates.main()
             tables=maintenance.call_args.args[1]
@@ -66,6 +72,30 @@ class MaintenanceTests(unittest.TestCase):
             self.assertIn('item_images', tables)
             self.assertIn('item_image_locations', tables)
             logger.flush_log_records.assert_called_once()
+            execute.assert_called_once_with(maintenance.call_args.args[0], 'EXEC [dbo].[update_pst_table];')
+            self.assertEqual([call[0] for call in order.mock_calls], ['maintenance', 'pst', 'flush'])
+
+    def test_pst_failure_fails_daily_run_and_still_flushes_and_disposes(self):
+        with ExitStack() as stack:
+            for name in daily_updates.main.__code__.co_names:
+                if name.startswith('update_'):
+                    stack.enter_context(patch.object(shinerutils, name, return_value=0))
+            engine=Mock()
+            stack.enter_context(patch.object(shinerutils, 'get_sqlalchemy_engine', return_value=engine))
+            logger=Mock()
+            logger.flush_log_records.return_value=None
+            stack.enter_context(patch('shinerutils.logging.DatabaseLogger', return_value=logger))
+            stack.enter_context(patch('shinerutils.maintenance.maintain_loaded_tables'))
+            stack.enter_context(patch('shinerutils.updates.item_thumbnails.make_missing_item_thumbnails', return_value=None))
+            execute=stack.enter_context(patch.object(shinerutils, 'execute_sql_procedure', return_value=(None, 'SQL failed')))
+            stack.enter_context(patch('builtins.print'))
+            with self.assertRaisesRegex(RuntimeError, 'PST report refresh failed'):
+                daily_updates.main()
+            execute.assert_called_once_with(engine, 'EXEC [dbo].[update_pst_table];')
+            self.assertTrue(any(call.kwargs.get('table') == 'potential_sell_through' for call in logger.failure.call_args_list))
+            logger.critical.assert_called_once()
+            logger.flush_log_records.assert_called_once_with(engine)
+            self.assertEqual(engine.dispose.call_count, 3)
 
 
 if __name__ == '__main__':
