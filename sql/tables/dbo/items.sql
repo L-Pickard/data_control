@@ -53,7 +53,8 @@ IF EXISTS [dbo].[items]
 		,[coo] NVARCHAR(10) NULL
 		,[unit_of_measure] NVARCHAR(10) NULL
 		,[hot_product] BIT NULL
-		,[lead_time_days] INTEGER NULL
+		,[lead_time_days] DECIMAL(38, 20) NOT NULL CONSTRAINT [DF_items_lead_time_days] DEFAULT (30)
+		,[lead_time_months] DECIMAL(38, 20) NOT NULL CONSTRAINT [DF_items_lead_time_months] DEFAULT (1)
 		,[bread_butter] BIT NULL
 		,[ltd_buffer_stock] DECIMAL(38, 20) NULL
 		,[bv_buffer_stock] DECIMAL(38, 20) NULL

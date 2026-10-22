@@ -75,9 +75,7 @@ def clean_items_df(df) -> DataFrame:
         "web_item",
     ]
 
-    integer_defaults = [
-        "lead_time_days",
-    ]
+    lead_time_defaults = {"lead_time_days": 30, "lead_time_months": 1}
 
     for col in text_defaults:
         if col in df.columns:
@@ -95,9 +93,9 @@ def clean_items_df(df) -> DataFrame:
         if col in df.columns:
             df[col] = df[col].fillna(0).astype(bool)
 
-    for col in integer_defaults:
+    for col, default in lead_time_defaults.items():
         if col in df.columns:
-            df[col] = df[col].fillna(0).astype(int)
+            df[col] = df[col].fillna(default)
 
     if "record_id" in df.columns:
         df["record_id"] = df["record_id"].apply(
@@ -228,7 +226,9 @@ def update_items_table(
             df_items,
             "replace",
             chunksize=20000,
-            datatype={"record_id": VARBINARY(60), "royalty": DECIMAL(38, 20)},
+            datatype={"record_id": VARBINARY(60), "royalty": DECIMAL(38, 20),
+                      "lead_time_days": DECIMAL(38, 20),
+                      "lead_time_months": DECIMAL(38, 20)},
             schema="dbo",
         )
         _, error = execute_sql_procedure(

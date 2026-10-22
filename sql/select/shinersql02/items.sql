@@ -1,3 +1,41 @@
+WITH lead_times
+AS (
+	SELECT [lead_time_text]
+		,[lead_time_months]
+		,[lead_time_days]
+
+	FROM (
+        VALUES
+		 ('90DAYS', 3, 90)
+		,('90 DAYS', 3, 90)
+		,('90D', 3, 90)
+		,('3M', 3, 90)
+		,('4M', 4, 120)
+		,('120D', 4, 120)
+		,('60 days', 2, 60)
+		,('60', 2, 60)
+		,('60D', 2, 60)
+		,('2M', 2, 60)
+		,('3.5M', 3.5, 105)
+		,('4.75M', 4.75, 142.5)
+		,('4.5M', 4.5, 135)
+		,('6M', 6, 180)
+		,('2.5M', 2.5, 75)
+		,('1.5M', 1.5, 45)
+		,('45 DAYS', 1.5, 45)
+		,('45 days production', 1.5, 45)
+		,('30D', 1, 30)
+		,('1M', 1, 30)
+		,('0.5M', 0.5, 15)
+		,('15 DAYS', 0.5, 15)
+		,('N/A', 6, 180)
+		,('NA', 6, 180)
+		,('0M', 6, 180)
+		,(' ', 6, 180)
+		,('30 days', 1, 30)
+        ) AS lead_times([lead_time_text], [lead_time_months], [lead_time_days])
+	)
+
 SELECT ISNULL(it.[No_], bt.[No_])                                           AS [item_id]
 	,ISNULL(it.[Vendor Reference], bt.[Vendor Reference])                   AS [vendor_reference]
 	,ISNULL(LEFT(it.[No_], 3), LEFT(bt.[No_], 3))                           AS [brand_id]
@@ -78,9 +116,9 @@ SELECT ISNULL(it.[No_], bt.[No_])                                           AS [
 	,ISNULL(bt.[Unit Cost], 0)                                              AS [eur_cost]
 	,ISNULL((
 			SELECT TOP 1 [Unit Price]
-			
+
 			FROM [Shiner$Sales Price]
-			
+
 			WHERE [Sales Type] = 2
 				AND [Currency Code] = 'EUR'
 				AND [Minimum Quantity] = 1
@@ -89,9 +127,9 @@ SELECT ISNULL(it.[No_], bt.[No_])                                           AS [
 	,ISNULL(it.[Euro SRP], bt.[Euro SRP])                                   AS [eur_srp]
 	,ISNULL((
 			SELECT TOP 1 [Unit Price]
-			
+
 			FROM [Shiner$Sales Price]
-			
+
 			WHERE [Sales Type] = 2
 				AND [Currency Code] = 'USD'
 				AND [Minimum Quantity] = 1
@@ -103,11 +141,12 @@ SELECT ISNULL(it.[No_], bt.[No_])                                           AS [
 	,it.[Blocked]                                                           AS [ltd_blocked]
 	,bt.[Blocked]                                                           AS [bv_blocked]
 	,ISNULL(it.[Preferential Sale], bt.[Preferential Sale])                 AS [pref_sale]
-	,ISNULL(it.[Country_Region of Origin Code], 
+	,ISNULL(it.[Country_Region of Origin Code],
                 bt.[Country_Region of Origin Code])                         AS [coo]
 	,ISNULL(it.[Base Unit of Measure], bt.[Base Unit of Measure])           AS [unit_of_measure]
 	,ISNULL(it.[Hot Product], bt.[Hot Product])                             AS [hot_product]
-	,30 AS [lead_time_days] -- call a function to extract lead time days
+	,ISNULL(lt.[lead_time_days], 60) 										AS [lead_time_days]
+	,ISNULL(lt.[lead_time_months], 2)										AS [lead_time_months]
 	,ISNULL(it.[Bread & Butter], bt.[Bread & Butter])                       AS [bread_butter]
 	,CAST(ISNULL(it.[Buffer Stock], 0) AS INTEGER)                          AS [ltd_buffer_stock]
 	,CAST(ISNULL(bt.[Buffer Stock], 0) AS INTEGER)                          AS [bv_buffer_stock]
@@ -135,5 +174,8 @@ LEFT JOIN [Shiner$Item Category] AS ct
 LEFT JOIN [Shiner$Product Group] AS pg
 	ON it.[Item Category Code] = pg.[Item Category Code]
 		AND it.[Product Group Code] = pg.[Code]
+
+LEFT JOIN lead_times AS lt
+	ON ISNULL(it.[Lead Time Text], bt.[Lead Time Text]) = lt.[lead_time_text]
 
 WHERE LEN(ISNULL(it.[No_], bt.[No_])) <= 30;

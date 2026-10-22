@@ -39,6 +39,7 @@ SELECT it.[No_]                                                             AS [
     ,it.[Base Unit of Measure]                                              AS [unit_of_measure]
     ,0                                                                      AS [hot_product]
     ,30                                                                     AS [lead_time_days]
+    ,1                                                                      AS [lead_time_months]
     ,0                                                                      AS [bread_butter]
     ,0                                                                      AS [ltd_buffer_stock]
     ,0                                                                      AS [bv_buffer_stock]

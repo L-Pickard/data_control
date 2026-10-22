@@ -100,7 +100,7 @@ BEGIN
 			,[eur_srp], [usd_cost], [usd_trade], [usd_srp]
 			,[royalty], [uk_eu_vendor_no], [us_vendor_no], [ltd_blocked]
 			,[bv_blocked], [llc_blocked], [pref_sale], [coo]
-			,[unit_of_measure], [hot_product], [lead_time_days], [bread_butter]
+			,[unit_of_measure], [hot_product], [lead_time_days], [lead_time_months], [bread_butter]
 			,[ltd_buffer_stock], [bv_buffer_stock], [common_item_no], [d2c_master_sku]
 			,[d2c_web_item], [owtanet_export], [web_item], [record_id]
 		INTO #new_items FROM [dbo].[items];
@@ -113,7 +113,7 @@ BEGIN
 			,[gbp_cost], [gbp_trade], [gbp_srp], [eur_cost], [eur_trade], [eur_srp]
 			,[usd_cost], [usd_trade], [usd_srp], [royalty], [uk_eu_vendor_no]
 			,[us_vendor_no], [ltd_blocked], [bv_blocked], [llc_blocked], [pref_sale]
-			,[coo], [unit_of_measure], [hot_product], [lead_time_days], [bread_butter]
+			,[coo], [unit_of_measure], [hot_product], [lead_time_days], [lead_time_months], [bread_butter]
 			,[ltd_buffer_stock], [bv_buffer_stock], [common_item_no], [d2c_master_sku]
 			,[d2c_web_item], [owtanet_export], [web_item], [record_id]
 		)
@@ -129,7 +129,7 @@ BEGIN
 			,NULLIF([uk_eu_vendor_no], N''), NULLIF([us_vendor_no], N'')
 			,[ltd_blocked], [bv_blocked], [llc_blocked], [pref_sale]
 			,NULLIF([coo], N''), NULLIF([unit_of_measure], N''), [hot_product]
-			,[lead_time_days], [bread_butter], [ltd_buffer_stock], [bv_buffer_stock]
+			,[lead_time_days], [lead_time_months], [bread_butter], [ltd_buffer_stock], [bv_buffer_stock]
 			,NULLIF([common_item_no], N''), NULLIF([d2c_master_sku], N'')
 			,NULLIF([d2c_web_item], N''), [owtanet_export], [web_item], [record_id]
 		FROM [dbo].[items_staging];
@@ -174,6 +174,7 @@ BEGIN
 			target.[unit_of_measure] = source.[unit_of_measure],
 			target.[hot_product] = source.[hot_product],
 			target.[lead_time_days] = source.[lead_time_days],
+			target.[lead_time_months] = source.[lead_time_months],
 			target.[bread_butter] = source.[bread_butter],
 			target.[ltd_buffer_stock] = source.[ltd_buffer_stock],
 			target.[bv_buffer_stock] = source.[bv_buffer_stock],
@@ -195,7 +196,7 @@ BEGIN
 			,[eur_srp], [usd_cost], [usd_trade], [usd_srp]
 			,[royalty], [uk_eu_vendor_no], [us_vendor_no], [ltd_blocked]
 			,[bv_blocked], [llc_blocked], [pref_sale], [coo]
-			,[unit_of_measure], [hot_product], [lead_time_days], [bread_butter]
+			,[unit_of_measure], [hot_product], [lead_time_days], [lead_time_months], [bread_butter]
 			,[ltd_buffer_stock], [bv_buffer_stock], [common_item_no], [d2c_master_sku]
 			,[d2c_web_item], [owtanet_export], [web_item], [record_id])
 		SELECT source.[item_id], source.[is_placeholder], source.[vendor_reference], source.[description]
@@ -207,7 +208,7 @@ BEGIN
 			,source.[eur_srp], source.[usd_cost], source.[usd_trade], source.[usd_srp]
 			,source.[royalty], source.[uk_eu_vendor_no], source.[us_vendor_no], source.[ltd_blocked]
 			,source.[bv_blocked], source.[llc_blocked], source.[pref_sale], source.[coo]
-			,source.[unit_of_measure], source.[hot_product], source.[lead_time_days], source.[bread_butter]
+			,source.[unit_of_measure], source.[hot_product], source.[lead_time_days], source.[lead_time_months], source.[bread_butter]
 			,source.[ltd_buffer_stock], source.[bv_buffer_stock], source.[common_item_no], source.[d2c_master_sku]
 			,source.[d2c_web_item], source.[owtanet_export], source.[web_item], source.[record_id]
 		FROM #new_items AS source
