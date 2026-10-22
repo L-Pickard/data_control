@@ -433,7 +433,7 @@ BEGIN
 				)
 			
 			INSERT [dbo].[potential_sell_through] (
-				[brand_id]
+				 [brand_id]
 				,[item_id]
 				,[pst_id]
 				,[inventory]
